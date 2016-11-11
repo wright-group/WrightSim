@@ -39,8 +39,10 @@ __version__ = _config.get('main', 'version') + '.' + _sha[:7]
 ### populate __all__ ##########################################################
 
 
-#from . import lib, hamiltonians, experiments
-
 __all__ = []
-#__all__.extend(lib.__all__)
-#__all__.extend(hamiltonians.__all__)
+
+from . import experiment
+from . import integration
+from . import measure
+from . import pulse
+from . import response
