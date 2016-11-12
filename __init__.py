@@ -41,8 +41,7 @@ __version__ = _config.get('main', 'version') + '.' + _sha[:7]
 
 __all__ = []
 
-from . import experiment
+from . import experiments
 from . import integration
 from . import measure
-from . import pulse
 from . import response
