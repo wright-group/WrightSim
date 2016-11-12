@@ -26,10 +26,14 @@ import numpy as np
 ### define ####################################################################
 
 
+wn_to_omega = 2*np.pi*3*10**-5  # omega is radians / fs
+
+
 # factor used to convert FWHM to stdev for function definition
 # gaussian defined such that FWHM,intensity scale = sigma * 2 * sqrt(ln(2))
 # (i.e. FWHM, intensity scale ~ 1.67 * sigma, amplitude scale)
 FWHM_to_sigma = 1./(2*np.sqrt(np.log(2)))
+
 
 # TODO: these should probably not be hard-coded
 timestep = 4.0
@@ -78,7 +82,7 @@ class GaussChirpRWA:
         'A' : 0, # amplitude, a.u.
         's' : 1, # pulse FWHM (in fs)
         'd' : 2, # pulse center delay fs
-        'w' : 3, # frequency in wavenumbers
+        'width' : 3, # frequency in wavenumbers
         'p' : 4, # phase shift, in radians
         'dz': 5  # coefficient for extent of chirp inducement
     }
@@ -174,7 +178,7 @@ class GaussRWA:
         'A' : 0, # amplitude, a.u.
         's' : 1, # pulse FWHM (in fs)
         'd' : 2, # pulse center delay fs
-        'w' : 3, # frequency in wavenumbers
+        'width' : 3, # frequency in wavenumbers
         'p' : 4  # phase shift, in radians
     }
     # initial vars come from misc module, just as with scan module
