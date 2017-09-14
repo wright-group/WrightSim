@@ -1,0 +1,6 @@
+# from conda: conda create -n wrightsim --file requirements.txt
+# from pip: pip install -r requirements.txt
+h5py>=2.7.0
+numpy
+scipy
+wrighttools
