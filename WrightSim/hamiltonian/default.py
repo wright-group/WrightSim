@@ -76,8 +76,8 @@ class Hamiltonian:
             second = E1
 
         A_1 = 0.5j * mu_ag * first * np.exp(1j * wag * time)
-        A_2 = 0.5j * mu_ag * first * np.exp(1j * wag * time)
-        A_2prime = 0.5j * mu_ag * first * np.exp(1j * wag * time)
-        B_1 = 0.5j * mu_2aa * first * np.exp(1j * wag * time)
-        B_2 = 0.5j * mu_2aa * first * np.exp(1j * wag * time)
-        B_2prime = 0.5j * mu_2aa * first * np.exp(1j * wag * time)
+        A_2 = 0.5j * mu_ag * E2 * np.exp(-1j * wag * time)
+        A_2prime = 0.5j * mu_ag * second * np.exp(1j * wag * time)
+        B_1 = 0.5j * mu_2aa * first * np.exp(1j * w2aa * time)
+        B_2 = 0.5j * mu_2aa * E2 * np.exp(-1j * w2aa * time)
+        B_2prime = 0.5j * mu_2aa * second * np.exp(1j * w2aa * time)
