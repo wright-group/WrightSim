@@ -1,3 +1,4 @@
+#! /usr/bin/env python3
 """
 creates an (d2, w1, w2) "movie" scan
 """

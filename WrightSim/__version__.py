@@ -1,4 +1,4 @@
-"""Define WrightTools version."""
+"""Define WrightSim version."""
 
 
 # --- import --------------------------------------------------------------------------------------
