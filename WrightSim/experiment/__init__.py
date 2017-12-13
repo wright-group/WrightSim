@@ -1,21 +1,23 @@
-### import ####################################################################
+# --- import --------------------------------------------------------------------------------------
 
 
 import os
+import collections
 
 import WrightTools as wt
 
 from . import experiment
 from . import pulse
+from ._axis import Axis
 
 
-### define ####################################################################
+# --- define --------------------------------------------------------------------------------------
 
 
 directory = os.path.dirname(__file__)
 
 
-### getters ###################################################################
+# --- getters -------------------------------------------------------------------------------------
 
 
 def builtin(name):
@@ -31,10 +33,11 @@ def from_ini(p):
     axes = []
     for name in axis_names:
         points = ini.read(name, 'points')
-        axis = wt.data.Axis(points=points, units=None, name=name)
-        setattr(axis, 'active', ini.read(name, 'active'))
-        setattr(axis, 'pulses', ini.read(name, 'pulses'))
-        setattr(axis, 'parameter', ini.read(name, 'parameter'))        
+        active = ini.read(name, 'active')
+        pulses = ini.read(name, 'pulses')
+        parameter = ini.read(name, 'parameter')
+        axis = Axis(points=points, units=None, name=name, active=active, pulses=pulses,
+                    parameter=parameter)
         axes.append(axis)
     # construct experiment object
     name = ini.read('main', 'name')
