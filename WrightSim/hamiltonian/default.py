@@ -11,7 +11,7 @@ class Hamiltonian:
                         labels=['00','01 -2','10 2\'','10 1','20 1+2\'','11 1-2','11 2\'-2', '10 1-2+2\'', '21 1-2+2\''],
                         time_orderings=list(range(1,7))):
         if rho is None:
-            self.rho = np.zeros(len(dm_vector), dtype=np.complex64)
+            self.rho = np.zeros(len(labels), dtype=np.complex64)
             self.rho[0] = 1.
         else:
             self.rho = rho

@@ -42,6 +42,7 @@ exp.timestep = 2.
 
 # create hamiltonian
 # TODO:
+ham = ws.hamiltonian.Hamiltonian()
 
 # do scan
 # TODO:
