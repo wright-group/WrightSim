@@ -7,7 +7,7 @@ class Hamiltonian:
 
     def __init__(self, rho=None, tau=None, mu=None,
                         w_0=None, w_central=7000., coupling=0,
-                        propegator=None, phase_cycle=False,
+                        propagator=None, phase_cycle=False,
                         labels=['00','01 -2','10 2\'','10 1','20 1+2\'','11 1-2','11 2\'-2', '10 1-2+2\'', '21 1-2+2\''],
                         time_orderings=list(range(1,7))):
         if rho is None:
@@ -24,7 +24,7 @@ class Hamiltonian:
             self.tau = tau
 
         if mu is None:
-            self.mu = np.array([0., 1., 0., 0., 0., 0., 0., 0., 1.])
+            self.mu = np.array([np.nan, 1., np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, 1.])
         else:
             self.mu = mu
 
@@ -38,11 +38,11 @@ class Hamiltonian:
         else:
             self.w_0 = w_0
 
-        if propegator is None:
+        if propagator is None:
             pass
             #TODO: use rk by default -- KFS 2017-12-12
         else:
-            self.propegator = propegator
+            self.propagator = propagator
         self.phase_cycle = phase_cycle
         self.labels = labels
 
