@@ -1,4 +1,4 @@
-### import ####################################################################
+# --- import --------------------------------------------------------------------------------------
 
 
 import os
@@ -10,22 +10,23 @@ import WrightTools as wt
 from . import pulse
 
 
-### define ####################################################################
+# --- define --------------------------------------------------------------------------------------
 
 
-directory = os.path.dirname(__file__)
+here = os.path.abspath(os.path.dirname(__file__))
+
 
 # integration defaults
 timestep = 4.0
 early_buffer = 100.0
-late_buffer  = 400.0
+late_buffer = 400.0
 
 
-### main class ################################################################
+# --- class ---------------------------------------------------------------------------------------
 
 
-# experiments are the actual running of the data
 class Experiment:
+    """Experiment."""
 
     def __init__(self, axes, name, pm, pulse_class_name):
         # basic attributes
@@ -37,14 +38,14 @@ class Experiment:
         self.npulses = len(pm)
         self.timestep = timestep
         self.early_buffer = early_buffer
-        self.late_buffer  = late_buffer     
+        self.late_buffer = late_buffer
         # pulse
         self.pulse_class_name = pulse_class_name
         self.pulses = [pulse.__dict__[self.pulse_class_name]() for _ in self.pm]
 
     def __repr__(self):
-        return 'WrightSim.experiments.experiment.Experiment object \'{0}\' at {1}'.format(self.name, str(id(self)))      
-      
+        return 'WrightSim.Experiment object \'{0}\' at {1}'.format(self.name, str(id(self)))
+
     @property
     def active_axes(self):
         return [a for a in self.axes if a.active]
@@ -52,11 +53,11 @@ class Experiment:
     @property
     def axis_names(self):
         return [a.name for a in self.axes]
-        
+
     def set_axis(self, axis_name, points):
         '''
         Activate and define points for one of the experimental axes.
-        
+
         Parameters
         ----------
         axis_name : string
