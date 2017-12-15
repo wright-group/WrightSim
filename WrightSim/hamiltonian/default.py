@@ -1,12 +1,13 @@
 
 import numpy as np
+from ..mixed import propagate
 
 
 class Hamiltonian:
 
 
     def __init__(self, rho=None, tau=None, mu=None,
-                        w_0=None, w_central=7000., coupling=0,
+                        omega=None, w_central=7000., coupling=0,
                         propagator=None, phase_cycle=False,
                         labels=['00','01 -2','10 2\'','10 1','20 1+2\'','11 1-2','11 2\'-2', '10 1-2+2\'', '21 1-2+2\''],
                         time_orderings=list(range(1,7))):
@@ -28,19 +29,18 @@ class Hamiltonian:
         else:
             self.mu = mu
 
-        if w_0 is None:
+        if omega is None:
             w_ag = w_central
             w_2aa = w_ag - coupling
             w_2ag = 2*w_ag - coupling
             w_gg = 0.
             w_aa = w_gg
-            self.w_0 = np.array( [w_gg, -w_ag, w_ag, w_ag, w_2ag, w_aa, w_aa, w_ag, w_2aa] )
+            self.omega = np.array( [w_gg, -w_ag, w_ag, w_ag, w_2ag, w_aa, w_aa, w_ag, w_2aa] )
         else:
-            self.w_0 = w_0
+            self.omega = w_0
 
         if propagator is None:
-            pass
-            #TODO: use rk by default -- KFS 2017-12-12
+            self.propagator = propagate.runge_kutta
         else:
             self.propagator = propagator
         self.phase_cycle = phase_cycle
@@ -49,9 +49,9 @@ class Hamiltonian:
         self.time_orderings = time_orderings
         self.Gamma = 1./self.tau
 
-    def matrix(self, efields, time, energies):
+    def matrix(self, efields, time):
         E1,E2,E3 = efields[0:3]
-        return  self._gen_matrix(E1, E2, E3, time, energies)
+        return  self._gen_matrix(E1, E2, E3, time, self.omega)
 
     def _gen_matrix(self, E1, E2, E3, time, energies):
         """
