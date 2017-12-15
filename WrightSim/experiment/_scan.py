@@ -146,7 +146,7 @@ class Scan:
             Array in (axes..., pulse, time).
         """
         # [axes..., numpulses, nparams]
-        efp = self.get_efield_params()
+        efp = self.efp
         # [axes..., numpulses, pulse field values]
         efields_shape = list(efp.shape)
         if windowed:
