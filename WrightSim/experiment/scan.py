@@ -14,16 +14,16 @@ from . import pulse as pulse
 
 
 def do_work(arglist):
-    indices, iprime, inhom_object, H, pulse_class = arglist[:5]
-    efpi, pm, timestep, eb, lb, evolve_func = arglist[5:]
+    indices, iprime, H, pulse_class = arglist[:4]
+    efpi, pm, timestep, eb, lb, evolve_func = arglist[4:]
     # need to declare these for each function
     pulse_class.early_buffer = eb
     pulse_class.late_buffer = lb
     pulse_class.timestep = timestep
     t, efields = pulse_class.pulse(efpi, pm=pm)
-    out = evolve_func(t, efields, iprime, inhom_object, H)
+    out = evolve_func(t, efields, iprime, H)
     if indices[-1] == 0:
-        print(indices, pulse_class.timestep, iprime + '              \r',)
+       print(indices, pulse_class.timestep, str(iprime) + '              \r',)
     return indices, out
 
 
@@ -37,9 +37,9 @@ class Scan:
         self.ham = hamiltonian
         # unpack experiment
         self.axis_objs = self.exp.active_axes
-        pulse_class = self.exp.pulse_class
-        self.cols = pulse_class.cols
-        self.inv_cols = {v: k for k, v in pulse_class.cols.items()}
+        self.pulse_class = self.exp.pulse_class
+        self.cols = self.pulse_class.cols
+        self.inv_cols = {v: k for k, v in self.pulse_class.cols.items()}
         self.npulses = len(self.exp.pulses)
         self.pm = self.exp.pm
         self.early_buffer = self.exp.early_buffer
@@ -93,7 +93,7 @@ class Scan:
                 else:
                     # fill with default values, but where do i get the default
                     # values from?
-                    default_val = self.positions[pi, arg]
+                    default_val = 1#self.positions[pi, arg]
                     efp[..., pi, arg] = default_val
         return efp
 
@@ -110,7 +110,7 @@ class Scan:
             Array in (axes..., outgroups, time)
         """
         shape = list(self.array.shape)
-        shape.append(len(self.H.out_group))
+        shape.append(len(self.ham.recorded_indices))
         shape.append(self.iprime)
         self.pulse_class.timestep = self.timestep
         self.pulse_class.early_buffer = self.early_buffer
@@ -119,8 +119,8 @@ class Scan:
         self.sig = np.empty(shape, dtype=np.complex64)
         if mp:
             from multiprocessing import Pool, cpu_count
-            arglist = [[ind, self.iprime, self.inhom_object, self.H,
-                        pulse_class, self.efp[ind], self.pm, self.timestep,
+            arglist = [[ind, self.iprime, self.ham,
+                        self.pulse_class, self.efp[ind], self.pm, self.timestep,
                         self.early_buffer, self.late_buffer, self.ham.propagator]
                         for ind in np.ndindex(self.array.shape)]
             pool = Pool(processes=cpu_count())
@@ -137,7 +137,7 @@ class Scan:
         else:
             with wt.kit.Timer():
                 for indices in np.ndindex(self.array.shape):
-                    t, efields = pulse_class.pulse(self.efp[indices], pm=self.pm)
+                    t, efields = self.pulse_class.pulse(self.efp[indices], pm=self.pm)
                     self.sig[indices] = self.ham.propagator(t, efields, self.iprime, self.ham)
         return self.sig
 

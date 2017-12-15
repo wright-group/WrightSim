@@ -82,7 +82,7 @@ class GaussChirpRWA:
         'A' : 0, # amplitude, a.u.
         's' : 1, # pulse FWHM (in fs)
         'd' : 2, # pulse center delay fs
-        'width' : 3, # frequency in wavenumbers
+        'w' : 3, # frequency in wavenumbers
         'p' : 4, # phase shift, in radians
         'dz': 5  # coefficient for extent of chirp inducement
     }
@@ -178,7 +178,7 @@ class GaussRWA:
         'A' : 0, # amplitude, a.u.
         's' : 1, # pulse FWHM (in fs)
         'd' : 2, # pulse center delay fs
-        'width' : 3, # frequency in wavenumbers
+        'w' : 3, # frequency in wavenumbers
         'p' : 4  # phase shift, in radians
     }
     # initial vars come from misc module, just as with scan module

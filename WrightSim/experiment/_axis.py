@@ -26,13 +26,17 @@ class Axis(object):
         self.active = active
         self.parameter = parameter
         self.pulses = pulses
-        self.cols=cols
-        print(self.cols)
+        self.cols = cols
+        self._coords = None
 
     @property
     def coords(self):
+        if self._coords is not None:
+            return self._coords
         parameter_index = self.cols[self.parameter]
-        self.coords = np.zeros((len(self.pulses), 2), dtype=np.int)
+        coords = np.zeros((len(self.pulses), 2), dtype=np.int)
         for i, pulse in enumerate(self.pulses):
             # specify pulse and then efield param of pulse
-            self.coords[i] = [pulse, parameter_index]
+            coords[i] = [pulse, parameter_index]
+        self._coords = coords
+        return coords

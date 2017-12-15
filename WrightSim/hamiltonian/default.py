@@ -10,7 +10,7 @@ class Hamiltonian:
                         omega=None, w_central=7000., coupling=0,
                         propagator=None, phase_cycle=False,
                         labels=['00','01 -2','10 2\'','10 1','20 1+2\'','11 1-2','11 2\'-2', '10 1-2+2\'', '21 1-2+2\''],
-                        time_orderings=list(range(1,7))):
+                        time_orderings=list(range(1,7)), recorded_indices = [7, 8]):
         if rho is None:
             self.rho = np.zeros(len(labels), dtype=np.complex64)
             self.rho[0] = 1.
@@ -45,6 +45,7 @@ class Hamiltonian:
             self.propagator = propagator
         self.phase_cycle = phase_cycle
         self.labels = labels
+        self.recorded_indices = recorded_indices
 
         self.time_orderings = time_orderings
         self.Gamma = 1./self.tau
