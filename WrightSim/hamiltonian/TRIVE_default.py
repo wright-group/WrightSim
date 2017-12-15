@@ -92,7 +92,7 @@ class Hamiltonian:
             out[:,6,1] = A_2prime
         if 4 in self.time_orderings:
             out[:,4,2] = B_1
-        if 6 in self.time_orderings :
+        if 6 in self.time_orderings:
             out[:,6,2] = -A_2
         if 2 in self.time_orderings:
             out[:,4,3] = B_2prime
