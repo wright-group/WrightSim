@@ -13,6 +13,7 @@ import numpy as np
 
 import WrightSim as ws
 
+from matplotlib import pyplot as plt
 
 # --- define --------------------------------------------------------------------------------------
 
@@ -39,10 +40,14 @@ exp.w1.active = exp.w2.active = exp.d2.active = True
 exp.timestep = 2.
 
 # create hamiltonian
-ham = None
+ham = ws.hamiltonian.Hamiltonian(w_central=0.)
+
+for a in exp.active_axes:
+    print(a)
 
 # do scan
-scan = exp.run(ham)
+scan = exp.run(ham, mp=True)
+# TODO:
 
 # measure and plot
 # TODO:
