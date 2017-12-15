@@ -2,12 +2,11 @@
 
 
 import os
-import collections
 
 import WrightTools as wt
 
-from . import experiment
-from . import pulse
+from . import _pulse
+from ._experiment import Experiment
 from ._axis import Axis
 
 
@@ -29,7 +28,7 @@ def from_ini(p):
     ini = wt.kit.INI(p)
     # pulse
     pulse_class_name = ini.read('main', 'pulse class name')
-    pulse_class = pulse.__dict__[pulse_class_name]
+    pulse_class = _pulse.__dict__[pulse_class_name]
     # axes
     axis_names = ini.sections
     axis_names.remove('main')
@@ -45,6 +44,6 @@ def from_ini(p):
     # construct experiment object
     name = ini.read('main', 'name')
     pm = ini.read('main', 'pm')
-    e = experiment.Experiment(axes=axes, name=name, pm=pm, pulse_class=pulse_class)
+    e = Experiment(axes=axes, name=name, pm=pm, pulse_class=pulse_class)
     # finish
     return e

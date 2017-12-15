@@ -1,13 +1,11 @@
 # --- import --------------------------------------------------------------------------------------
 
 
+import collections
+
 import numpy as np
 
-from scipy.signal import convolve2d
-
 import WrightTools as wt
-
-from . import pulse as pulse
 
 
 # --- functions -----------------------------------------------------------------------------------
@@ -39,7 +37,6 @@ class Scan:
         self.axis_objs = self.exp.active_axes
         self.pulse_class = self.exp.pulse_class
         self.cols = self.pulse_class.cols
-        self.inv_cols = {v: k for k, v in self.pulse_class.cols.items()}
         self.npulses = len(self.exp.pulses)
         self.pm = self.exp.pm
         self.early_buffer = self.exp.early_buffer
@@ -66,35 +63,19 @@ class Scan:
         numpy ndarray
             Array in (axes..., pulse, parameter).
         """
-        if indices is None:
-            indices = np.ndindex(self.array.shape)
-        shape = list(self.array.shape)
-        # add to each dims element a nxm array to store m params for all n pulses
-        shape.append(self.npulses)
-        num_args = len(self.cols)
-        shape.append(num_args)
-        efp = np.zeros(shape)
-        for index in indices:
-            this_point = np.zeros(shape[-2:])
-            # loop through each axis to set points
-            for i in range(len(index)):
-                # for each axis, loop through all vars changed by it
-                for j in range(len(self.axis_objs[i].coords)):
-                    coords = self.axis_objs[i].coords[j]
-                    this_point[coords[0], coords[1]] = self.axis_objs[i].points[index[i]]
-            efp[index] = this_point
-        # now, if we didn't fill in a value by going through the scan ranges,
-        # we now have to fill in with specified constants
-        for pi in range(self.npulses):
-            for arg in range(num_args):
-                indices = [pi, arg]
-                if indices in self.coords_set:
-                    pass
+        efp = np.zeros(self.shape + (self.npulses, len(self.cols)))
+        for pulse_index in range(self.npulses):
+            axes = [a for a in self.exp.axes if pulse_index in a.pulses]
+            for axis in axes:
+                parameter_index = self.cols.index(axis.parameter)
+                if axis.active:
+                    axis_index = self.exp.active_axes.index(axis)
+                    points = axis.points.copy()
+                    for _ in range(axis_index, len(self.exp.active_axes) - 1):
+                        points.shape += (1,)
+                    efp[..., pulse_index, parameter_index] = points
                 else:
-                    # fill with default values, but where do i get the default
-                    # values from?
-                    default_val = 1#self.positions[pi, arg]
-                    efp[..., pi, arg] = default_val
+                    efp[..., pulse_index, parameter_index] = axis.points
         return efp
 
     def run(self, mp=True, chunk=False):
@@ -136,9 +117,9 @@ class Scan:
             del results
         else:
             with wt.kit.Timer():
-                for indices in np.ndindex(self.array.shape):
-                    t, efields = self.pulse_class.pulse(self.efp[indices], pm=self.pm)
-                    self.sig[indices] = self.ham.propagator(t, efields, self.iprime, self.ham)
+                for idx in np.ndindex(self.shape):
+                    t, efields = self.pulse_class.pulse(self.efp[idx], pm=self.pm)
+                    self.sig[idx] = self.ham.propagator(t, efields, self.iprime, self.ham)
         return self.sig
 
     def get_color(self):

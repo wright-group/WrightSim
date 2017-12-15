@@ -7,8 +7,8 @@ import numpy as np
 
 import WrightTools as wt
 
-from . import pulse
-from . import scan
+from . import _pulse
+from ._scan import Scan
 
 
 # --- define --------------------------------------------------------------------------------------
@@ -69,7 +69,7 @@ class Experiment:
         -------
         WrightSim Scan
             Scan that was run."""
-        out = scan.Scan(self, hamiltonian)
+        out = Scan(self, hamiltonian)
         out.run(mp=mp)
         # finish
         return out
