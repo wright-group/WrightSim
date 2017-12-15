@@ -36,15 +36,13 @@ exp.w1.points = np.linspace(-2.5, 2.5, nw) * 4 * np.log(2) / dt * 1 / (2 * np.pi
 exp.w2.points = exp.w1.points.copy()
 exp.d2.points = np.linspace(-2 * dt, 4 * dt, nt)
 exp.w1.active = exp.w2.active = exp.d2.active = True
-exp.set_axis('d1', 0)
-exp.set_axis('ss', dt)
 exp.timestep = 2.
 
 # create hamiltonian
-# TODO:
+ham = None
 
 # do scan
-# TODO:
+scan = exp.run(ham)
 
 # measure and plot
 # TODO:
