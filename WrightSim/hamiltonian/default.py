@@ -71,12 +71,12 @@ class Hamiltonian:
         mu_ag = self.mu[1]
         mu_2aa = self.mu[-1]
     
-        A_1 = 0.5j * mu_ag * E1 * np.exp(1j * wag * time)
-        A_2 = 0.5j * mu_ag * E2 * np.exp(-1j * wag * time)
-        A_2prime = 0.5j * mu_ag * E3 * np.exp(1j * wag * time)
-        B_1 = 0.5j * mu_2aa * E1 * np.exp(1j * w2aa * time)
-        B_2 = 0.5j * mu_2aa * E2 * np.exp(-1j * w2aa * time)
-        B_2prime = 0.5j * mu_2aa * E3 * np.exp(1j * w2aa * time)
+        A_1 = 0.5j * mu_ag * E1 * np.exp(-1j * wag * time)
+        A_2 = 0.5j * mu_ag * E2 * np.exp(1j * wag * time)
+        A_2prime = 0.5j * mu_ag * E3 * np.exp(-1j * wag * time)
+        B_1 = 0.5j * mu_2aa * E1 * np.exp(-1j * w2aa * time)
+        B_2 = 0.5j * mu_2aa * E2 * np.exp(1j * w2aa * time)
+        B_2prime = 0.5j * mu_2aa * E3 * np.exp(-1j * w2aa * time)
 
         out = np.zeros((len(time), len(energies), len(energies)), dtype=np.complex64)
 
