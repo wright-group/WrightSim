@@ -1,6 +1,6 @@
 #! /usr/bin/env python3
 """
-creates an (d2, w1, w2) "movie" scan
+creates an (wIR, w4) "movie" scan
 """
 
 
@@ -22,50 +22,51 @@ import WrightSim as ws
 here = os.path.abspath(os.path.dirname(__file__))
 
 
-dt = 50.  # pulse duration (fs)
+dt = 1e3  # pulse duration (fs)
 slitwidth = 120.  # mono resolution (wn)
 
 nw = 32  # number of frequency points (w1 and w2)
-nt = 16  # number of delay points (d2)
+#nt = 16  # number of delay points (d2)
 
 
 # --- workspace -----------------------------------------------------------------------------------
 
 
 # create experiment
-exp = ws.experiment.builtin('trive')
-exp.w1.points = np.linspace(-2.5, 2.5, nw) * 4 * np.log(2) / dt * 1 / (2 * np.pi * 3e-5)
+exp = ws.experiment.builtin('trsf')
+exp.w1.points = np.linspace(1400, 1700, nw)
 exp.w2.points = exp.w1.points.copy()
-#exp.w2.points = 0.
-#exp.d2.points = np.linspace(-2 * dt, 8 * dt, nt)
-exp.w1.active = exp.w2.active = True
-exp.d2.points = 4 * dt
-exp.timestep = 2.
-exp.early_buffer = 100.0
-exp.late_buffer  = 400.0
+exp.w3.points = np.linspace(15800, 18000, 2*nw)
+
+exp.w1.active = exp.w2.active = exp.w3.active = True
+
+exp.timestep = dt/50.
+exp.early_buffer = 1.5e3
+exp.late_buffer = 1.5e3
 
 # create hamiltonian
-ham = ws.hamiltonian.Hamiltonian(w_central=0.)
-#ham.time_orderings = [5]
-ham.recorded_elements = [7,8]
-
+ham = ws.hamiltonian.Hamiltonian_TRSF()
 # do scan
 scan = exp.run(ham, mp=False)
 
+#"""
 plt.close('all')
 # measure and plot
 fig, gs = wt.artists.create_figure(cols=[1, 'cbar'])
 ax = plt.subplot(gs[0, 0])
 xi = exp.active_axes[0].points
-yi = exp.active_axes[1].points
+yi = exp.active_axes[2].points
 zi = np.sum(np.abs(np.sum(scan.sig, axis=-2)), axis=-1).T
+zi = zi.diagonal(axis1=0, axis2=1).copy()
+#zi = zi.sum(axis=-1)
 zi /= zi.max()
 ax.contourf(xi, yi, zi, vmin=0, vmax=1, cmap='default')
 ax.contour(xi, yi, zi, colors='k')
 # decoration
 ax.set_xlabel(exp.active_axes[0].name)
-ax.set_ylabel(exp.active_axes[1].name)
+ax.set_ylabel(exp.active_axes[2].name)
 cax = plt.subplot(gs[0, 1])
 wt.artists.plot_colorbar(label='ampiltude')
 # finish
 plt.show()
+#"""

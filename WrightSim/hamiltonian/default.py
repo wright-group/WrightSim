@@ -1,17 +1,18 @@
 
 import numpy as np
+from ..mixed import propagate
 
 
 class Hamiltonian:
 
 
     def __init__(self, rho=None, tau=None, mu=None,
-                        w_0=None, w_central=7000., coupling=0,
+                        omega=None, w_central=7000., coupling=0,
                         propagator=None, phase_cycle=False,
                         labels=['00','01 -2','10 2\'','10 1','20 1+2\'','11 1-2','11 2\'-2', '10 1-2+2\'', '21 1-2+2\''],
-                        time_orderings=list(range(1,7))):
+                        time_orderings=list(range(1,7)), recorded_indices = [7, 8]):
         if rho is None:
-            self.rho = np.zeros(len(dm_vector), dtype=np.complex64)
+            self.rho = np.zeros(len(labels), dtype=np.complex64)
             self.rho[0] = 1.
         else:
             self.rho = rho
@@ -28,30 +29,30 @@ class Hamiltonian:
         else:
             self.mu = mu
 
-        if w_0 is None:
+        if omega is None:
             w_ag = w_central
             w_2aa = w_ag - coupling
             w_2ag = 2*w_ag - coupling
             w_gg = 0.
             w_aa = w_gg
-            self.w_0 = np.array( [w_gg, -w_ag, w_ag, w_ag, w_2ag, w_aa, w_aa, w_ag, w_2aa] )
+            self.omega = np.array( [w_gg, -w_ag, w_ag, w_ag, w_2ag, w_aa, w_aa, w_ag, w_2aa] )
         else:
-            self.w_0 = w_0
+            self.omega = w_0
 
         if propagator is None:
-            pass
-            #TODO: use rk by default -- KFS 2017-12-12
+            self.propagator = propagate.runge_kutta
         else:
             self.propagator = propagator
         self.phase_cycle = phase_cycle
         self.labels = labels
+        self.recorded_indices = recorded_indices
 
         self.time_orderings = time_orderings
         self.Gamma = 1./self.tau
 
-    def matrix(self, efields, time, energies):
+    def matrix(self, efields, time):
         E1,E2,E3 = efields[0:3]
-        return  self._gen_matrix(E1, E2, E3, time, energies)
+        return  self._gen_matrix(E1, E2, E3, time, self.omega)
 
     def _gen_matrix(self, E1, E2, E3, time, energies):
         """
@@ -70,12 +71,12 @@ class Hamiltonian:
         mu_ag = self.mu[1]
         mu_2aa = self.mu[-1]
     
-        A_1 = 0.5j * mu_ag * E1 * np.exp(1j * wag * time)
-        A_2 = 0.5j * mu_ag * E2 * np.exp(-1j * wag * time)
-        A_2prime = 0.5j * mu_ag * E3 * np.exp(1j * wag * time)
-        B_1 = 0.5j * mu_2aa * E1 * np.exp(1j * w2aa * time)
-        B_2 = 0.5j * mu_2aa * E2 * np.exp(-1j * w2aa * time)
-        B_2prime = 0.5j * mu_2aa * E3 * np.exp(1j * w2aa * time)
+        A_1 = 0.5j * mu_ag * E1 * np.exp(-1j * wag * time)
+        A_2 = 0.5j * mu_ag * E2 * np.exp(1j * wag * time)
+        A_2prime = 0.5j * mu_ag * E3 * np.exp(-1j * wag * time)
+        B_1 = 0.5j * mu_2aa * E1 * np.exp(-1j * w2aa * time)
+        B_2 = 0.5j * mu_2aa * E2 * np.exp(1j * w2aa * time)
+        B_2prime = 0.5j * mu_2aa * E3 * np.exp(-1j * w2aa * time)
 
         out = np.zeros((len(time), len(energies), len(energies)), dtype=np.complex64)
 
@@ -91,7 +92,7 @@ class Hamiltonian:
             out[:,6,1] = A_2prime
         if 4 in self.time_orderings:
             out[:,4,2] = B_1
-        if 6 in self.time_orderings :
+        if 6 in self.time_orderings:
             out[:,6,2] = -A_2
         if 2 in self.time_orderings:
             out[:,4,3] = B_2prime
