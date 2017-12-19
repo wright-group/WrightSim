@@ -1,4 +1,5 @@
 import numpy as np
+from pycuda import driver as cuda
 
 def runge_kutta(t, efields, n_recorded, hamiltonian):
     """
@@ -30,9 +31,7 @@ def runge_kutta(t, efields, n_recorded, hamiltonian):
         # calculate delta rho based on previous rho values
         temp_delta_rho = np.dot(H[k], rho_i)
         temp_rho_i = rho_i + temp_delta_rho*dt
-        # test if index is out of range
         delta_rho = np.dot(H[k+1], temp_rho_i)
-        # iterative method fails on the last timestep, so handle it
         rho_i += dt/2 * (temp_delta_rho + delta_rho)
         # if we are close enough to final coherence emission, start 
         # storing these values
@@ -48,3 +47,43 @@ def runge_kutta(t, efields, n_recorded, hamiltonian):
 
    # rho_emitted[s,t], s is out_group index, t is time index
     return rho_emitted
+
+runge_kutta_cuda_source = """
+    __device__ pycuda::complex<double>* runge_kutta(double time_start, double time_end, double dt, 
+                                                   int nEFields, pycuda::complex<double> *efields,
+                                                   int n_recorded, Hamiltonian ham,
+                                                   pycuda::complex<double> *out)
+    {
+        pycuda::complex<double> *H_cur = malloc(ham->nStates * ham->nStates * sizeof(pycuda::complex<double>));
+        pycuda::complex<double> *H_next = malloc(ham->nStates * ham->nStates * sizeof(pycuda::complex<double>));
+
+        int out_index = 0;
+        int index=0;
+        int npoints = (int) ((time_end-time_start)/dt);
+
+        H_next = Hamiltonian_matrix(nEFields, efields + nEFields*index, t);
+        for(double t = time_start; t < time_end; t += dt)
+        {   
+            H_cur = H_next;
+            H_next = Hamiltonian_matrix(nEFields, efields + nEFields*(index+1), t+dt);
+            //TODO: write dot
+            pycuda::complex<double>* temp_delta_rho = dot(H_cur, ham->rho, ham->nStates);
+            //TODO: write muladd/see if I can use the pycuda one?
+            pycuda::complex<double>* temp_rho_i = muladd(ham->rho, 1., temp_delta_rho, dt);
+            pycuda::complex<double>* delta_rho = dot(H_next, temp_rho_i, ham->nStates);
+            //TODO add to ham->rho
+
+            if(index > npoints - n_recorded)
+            {
+                for(int i=0; i < ham->nRecorded; i++)
+                    out[out_index + i * n_recorded] = ham->rho[ham->recorded_indices[i]];
+                out_index++;
+            }
+            index++;
+        }
+        
+        pycuda::complex<double>* temp_delta_rho = dot(H_cur, ham->rho, ham->nStates);
+        ham->rho = muladd(ham->rho, 1., temp_delta_rho, dt);
+        for(int i=0; i < ham->nRecorded; i++)
+            out[out_index + i * n_recorded] = ham->rho[ham->recorded_indices[i]];
+    }

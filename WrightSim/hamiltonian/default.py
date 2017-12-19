@@ -1,9 +1,26 @@
 
 import numpy as np
+import pycuda.driver as cuda
+
 from ..mixed import propagate
 
 
 class Hamiltonian:
+    cuda_struct = """
+    #include <pycuda-commplex.h>
+
+    struct Hamiltonian {
+        int nStates, nMu, nTimeOrderings, nRecorded;
+        pycuda::complex<double>* rho;
+        pycuda::complex<double>* mu;
+        double* omega;
+        double* Gamma;
+
+        int* time_orderings;
+        int* recorded_indices;
+    };
+    """
+    cuda_mem_size = 4*4 + np.intp(0).nbytes*6
 
 
     def __init__(self, rho=None, tau=None, mu=None,
@@ -25,7 +42,7 @@ class Hamiltonian:
             self.tau = tau
 
         if mu is None:
-            self.mu = np.array([np.nan, 1., np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, 1.])
+            self.mu = np.array([1., 1.])
         else:
             self.mu = mu
 
@@ -50,6 +67,29 @@ class Hamiltonian:
         self.time_orderings = time_orderings
         self.Gamma = 1./self.tau
 
+    def to_device(self, pointer):
+        rho = cuda.to_device(self.rho)
+        mu = cuda.to_device(self.mu)
+        omega = cuda.to_device(self.omega)
+        Gamma = cuda.to_device(self.Gamma)
+
+        time_orderings = cuda.to_device(np.array(self.time_orderings))
+        recorded_indices = cuda.to_device(np.array(self.recorded_indices))
+
+        cuda.memcpy_htod(int(pointer) + 0, memoryview(np.int32(len(self.rho))))
+        cuda.memcpy_htod(int(pointer) + 4, memoryview(np.int32(len(self.mu))))
+        cuda.memcpy_htod(int(pointer) + 8, memoryview(np.int32(len(self.time_orderings))))
+        cuda.memcpy_htod(int(pointer) + 12, memoryview(np.int32(len(self.recorded_indices))))
+
+        cuda.memcpy_htod(int(pointer) + 16, memoryview(np.int32(int(rho))))
+        cuda.memcpy_htod(int(pointer) + 24, memoryview(np.int32(int(mu))))
+        cuda.memcpy_htod(int(pointer) + 32, memoryview(np.int32(int(omega))))
+        cuda.memcpy_htod(int(pointer) + 40, memoryview(np.int32(int(Gamma))))
+        cuda.memcpy_htod(int(pointer) + 48, memoryview(np.int32(int(time_orderings))))
+        cuda.memcpy_htod(int(pointer) + 56, memoryview(np.int32(int(recorded_indices))))
+
+        
+
     def matrix(self, efields, time):
         E1,E2,E3 = efields[0:3]
         return  self._gen_matrix(E1, E2, E3, time, self.omega)
@@ -68,7 +108,7 @@ class Hamiltonian:
         wag  = energies[1]
         w2aa = energies[-1]
         
-        mu_ag = self.mu[1]
+        mu_ag = self.mu[0]
         mu_2aa = self.mu[-1]
     
         A_1 = 0.5j * mu_ag * E1 * np.exp(-1j * wag * time)

@@ -37,9 +37,9 @@ exp = ws.experiment.builtin('trive')
 exp.w1.points = np.linspace(-2.5, 2.5, nw) * 4 * np.log(2) / dt * 1 / (2 * np.pi * 3e-5)
 exp.w2.points = exp.w1.points.copy()
 #exp.w2.points = 0.
-#exp.d2.points = np.linspace(-2 * dt, 8 * dt, nt)
-exp.w1.active = exp.w2.active = True
-exp.d2.points = 4 * dt
+exp.d2.points = np.linspace(-2 * dt, 8 * dt, nt)
+exp.w1.active = exp.w2.active = exp.d2.active = True
+#exp.d2.points = 4 * dt
 exp.timestep = 2.
 exp.early_buffer = 100.0
 exp.late_buffer  = 400.0
@@ -53,6 +53,7 @@ ham.recorded_elements = [7,8]
 scan = exp.run(ham, mp=False)
 
 plt.close('all')
+"""
 # measure and plot
 fig, gs = wt.artists.create_figure(cols=[1, 'cbar'])
 ax = plt.subplot(gs[0, 0])
@@ -69,3 +70,4 @@ cax = plt.subplot(gs[0, 1])
 wt.artists.plot_colorbar(label='ampiltude')
 # finish
 plt.show()
+"""
