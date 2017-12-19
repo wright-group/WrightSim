@@ -8,13 +8,14 @@ class Hamiltonian:
     def __init__(self, rho=None, tau=None, mu=None,
                  omega=None, 
                  labels = ['gg',
-                           'Ig_1', 'Ig_2', 'ig_1', 'ig_2'
+                           'Ig_1', 'Ig_2', 'ig_1', 'ig_2',
                            '2I,g', '2i,g', 'c,g',
                            'ag', 'bg'
                            ],
-                time_orderings = list(range(1,4)),
-                phase_cycle = False,
-                propagator = None):
+                 #time_orderings = list(range(1,4)),
+                 phase_cycle = False,
+                 propagator = None,
+                 recorded_indices = [8,9]):
 
         if rho is None:
             self.rho = np.zeros(len(labels), dtype=np.complex64)
@@ -23,21 +24,21 @@ class Hamiltonian:
             self.rho = rho
         
         if tau is None:
-            self.tau = tau
-        else:
             self.tau = np.array([np.inf, 
                                  1e3, 1e3, 1e3, 1e3,
                                  5e2, 5e2, 5e2,
                                  10, 10])
+        else:
+            self.tau = tau
 
         if omega is None:
-            w_I  = 1500,
-            w_i  = 1600,
-            w_2I = 2*w_I - 20,
-            w_2i = 2*w_i - 20,
-            w_c  = w_I + w_i,
-            w_a  = 19000,
-            w_b  = 21000,
+            w_I  = 1500.
+            w_i  = 1600.
+            w_2I = 2*w_I
+            w_2i = 2*w_i
+            w_c  = w_I + w_i
+            w_a  = 19000.
+            w_b  = 20000.
             self.omega = np.array([0,
                                    w_I, w_I, w_i, w_i,
                                    w_2I, w_2i, w_c,
@@ -45,7 +46,8 @@ class Hamiltonian:
         else:
             self.omega = omega
         
-        if mu is None:
+        if mu is None: 
+            # TODO: mu.get('element', default value) so it's easier to customize
             mu = {'I_g'  : 1.0,
                   'i_g'  : 1.0,
                   'a_I'  : 1.0,
@@ -62,6 +64,12 @@ class Hamiltonian:
             mu['2i_i'] = np.sqrt(2) * mu['i_g']
             mu['c_I'] = mu['i_g']
             mu['c_i'] = mu['I_g']
+            mu['a_2I'] = mu['a_g']
+            mu['a_2i'] = mu['a_g']
+            mu['b_2I'] = mu['b_g']
+            mu['b_2i'] = mu['b_g']
+
+        self.mu = mu
 
         if propagator is None:    
             self.propagator = propagate.runge_kutta
@@ -70,7 +78,8 @@ class Hamiltonian:
         
         self.phase_cycle = phase_cycle
         self.labels = labels
-        self.time_orderings = time_orderings
+        self.recorded_indices = recorded_indices
+        #self.time_orderings = time_orderings
         self.Gamma = 1. / self.tau
 
     def matrix(self, efields, time):
@@ -82,7 +91,10 @@ class Hamiltonian:
         out = np.zeros((len(time), len(self.omega), len(self.omega)), 
                        dtype=np.complex64)
 
-        wI, wi, wII, wii, wc, wa, wb = self.omega[1:]
+        wn_to_omega = 2*np.pi*3*10**-5
+        wI = self.omega[1] * wn_to_omega
+        wi = self.omega[3] * wn_to_omega
+        wII, wii, wc, wa, wb = self.omega[5:] * wn_to_omega
         
         wII_I = wII - wI
         wii_i = wii - wi
@@ -111,29 +123,29 @@ class Hamiltonian:
         mu_ac  = self.mu['a_c']
         mu_bc  = self.mu['b_c']
         
-        out[:,1,0] = 0.5j * mu_Ig * E1 * np.exp(-1j*wI*time)
-        out[:,2,0] = 0.5j * mu_Ig * E2 * np.exp(-1j*wI*time)
-        out[:,3,0] = 0.5j * mu_ig * E1 * np.exp(-1j*wi*time)
-        out[:,4,0] = 0.5j * mu_ig * E2 * np.exp(-1j*wi*time)
+        out[:,1,0] = 0.5j * mu_Ig * E1 * np.exp(1j*wI*time)
+        out[:,2,0] = 0.5j * mu_Ig * E2 * np.exp(1j*wI*time)
+        out[:,3,0] = 0.5j * mu_ig * E1 * np.exp(1j*wi*time)
+        out[:,4,0] = 0.5j * mu_ig * E2 * np.exp(1j*wi*time)
         
-        out[:,5,1] = 0.5j * mu_2II * E2 * np.exp(-1j * wII_I * time)
-        out[:,5,2] = 0.5j * mu_2II * E1 * np.exp(-1j * wII_I * time)
+        out[:,5,1] = 0.5j * mu_2II * E2 * np.exp(1j * wII_I * time)
+        out[:,5,2] = 0.5j * mu_2II * E1 * np.exp(1j * wII_I * time)
         
-        out[:,6,3] = 0.5j * mu_2ii * E2 * np.exp(-1j * wii_i * time)
-        out[:,6,4] = 0.5j * mu_2ii * E1 * np.exp(-1j * wii_i * time)
+        out[:,6,3] = 0.5j * mu_2ii * E2 * np.exp(1j * wii_i * time)
+        out[:,6,4] = 0.5j * mu_2ii * E1 * np.exp(1j * wii_i * time)
         
-        out[:,7,1] = 0.5j * mu_ci * E2 * np.exp(-1j * wc_I * time)
-        out[:,7,2] = 0.5j * mu_ci * E1 * np.exp(-1j * wc_I * time)
-        out[:,7,3] = 0.5j * mu_cI * E2 * np.exp(-1j * wc_i * time)
-        out[:,7,4] = 0.5j * mu_cI * E1 * np.exp(-1j * wc_i * time)
+        out[:,7,1] = 0.5j * mu_ci * E2 * np.exp(1j * wc_I * time)
+        out[:,7,2] = 0.5j * mu_ci * E1 * np.exp(1j * wc_I * time)
+        out[:,7,3] = 0.5j * mu_cI * E2 * np.exp(1j * wc_i * time)
+        out[:,7,4] = 0.5j * mu_cI * E1 * np.exp(1j * wc_i * time)
 
-        out[:,8,5] = 0.5j * mu_a2I * E3 * np.exp(-1j * wa_II * time)
-        out[:,8,6] = 0.5j * mu_a2i * E3 * np.exp(-1j * wa_ii * time)
-        out[:,8,7] = 0.5j * mu_ac * E3 * np.exp(-1j * wa_c * time)
+        out[:,8,5] = 0.5j * mu_a2I * E3 * np.exp(1j * wa_II * time)
+        out[:,8,6] = 0.5j * mu_a2i * E3 * np.exp(1j * wa_ii * time)
+        out[:,8,7] = 0.5j * mu_ac * E3 * np.exp(1j * wa_c * time)
         
-        out[:,9,5] = 0.5j * mu_b2I * E3 * np.exp(-1j * wb_II * time)
-        out[:,9,6] = 0.5j * mu_b2i * E3 * np.exp(-1j * wb_ii * time)
-        out[:,9,7] = 0.5j * mu_bc * E3 * np.exp(-1j * wb_c * time)
+        out[:,9,5] = 0.5j * mu_b2I * E3 * np.exp(1j * wb_II * time)
+        out[:,9,6] = 0.5j * mu_b2i * E3 * np.exp(1j * wb_ii * time)
+        out[:,9,7] = 0.5j * mu_bc * E3 * np.exp(1j * wb_c * time)
 
         for i in range(self.Gamma.size):
             out[:,i,i] = -self.Gamma[i]
