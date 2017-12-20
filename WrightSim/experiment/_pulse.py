@@ -7,7 +7,7 @@ import numpy as np
 # --- define --------------------------------------------------------------------------------------
 
 
-wn_to_omega = 2 * np.pi * 3 * 10**-5  # omega is radians / fs
+wn_to_omega = 2 * np.pi * 3e-5  # omega is radians / fs
 
 
 # factor used to convert FWHM to stdev for function definition
@@ -113,7 +113,7 @@ class GaussRWA:
             cc = np.ones((eparams.shape[-1]))
         else:
             cc = np.sign(pm)
-        x = np.e**(-1j*(cc[:,None]*(freq[:,None]*(t[None,:] - mu[:,None])+p[:,None])))
+        x = np.exp(-1j*(cc[:,None]*(freq[:,None]*(t[None,:] - mu[:,None])+p[:,None])))
         x*= y[:,None] * np.exp(-(t[None,:] - mu[:,None])**2 / (2*sigma[:,None]**2) )
         return t, x
 
