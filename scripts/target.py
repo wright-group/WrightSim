@@ -50,7 +50,7 @@ ham = ws.hamiltonian.Hamiltonian(w_central=0.)
 ham.recorded_elements = [7,8]
 
 # do scan
-scan = exp.run(ham, mp=False)
+scan = exp.run(ham, mp='gpu')
 
 plt.close('all')
 """

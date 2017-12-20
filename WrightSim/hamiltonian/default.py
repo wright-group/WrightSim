@@ -7,10 +7,14 @@ from ..mixed import propagate
 
 class Hamiltonian:
     cuda_struct = """
-    #include <pycuda-commplex>
+    #include <pycuda-complex.hpp>
+    #define I pycuda::complex<double>(0,1)
 
     struct Hamiltonian {
-        int nStates, nMu, nTimeOrderings, nRecorded;
+        int nStates;
+        int nMu;
+        int nTimeOrderings;
+        int nRecorded;
         pycuda::complex<double>* rho;
         pycuda::complex<double>* mu;
         double* omega;
@@ -161,64 +165,64 @@ class Hamiltonian:
         return out
 
     cuda_matrix_source = """
-    __device__ pycuda::complex<double>* Hamiltonian_matrix(Hamiltonian ham, pycuda::complex<double>* efields,
+    __device__ void Hamiltonian_matrix(Hamiltonian ham, pycuda::complex<double>* efields,
                                                            double time, pycuda::complex<double>* out)
     {
-        double wag = ham->omega[1];
-        double w2aa = ham->omega[8];
+        double wag = ham.omega[1];
+        double w2aa = ham.omega[8];
 
-        pycuda::complex<double> mu_ag =  ham->mu[0];
-        pycuda::complex<double> mu_2aa = ham->mu[1];
+        pycuda::complex<double> mu_ag =  ham.mu[0];
+        pycuda::complex<double> mu_2aa = ham.mu[1];
 
         pycuda::complex<double> E1 =  efields[0];
         pycuda::complex<double> E2 =  efields[1];
         pycuda::complex<double> E3 =  efields[2];
         
 
-        pycuda::complex<double> A_1 = 0.5 * I * mu_ag * E1 * pycuda::exp(-1 * I * wag * time);
+        pycuda::complex<double> A_1 = 0.5 * I * mu_ag * E1 * pycuda::exp(-1. * I * wag * time);
         pycuda::complex<double> A_2 = 0.5 * I * mu_ag * E2 * pycuda::exp(I * wag * time);
-        pycuda::complex<double> A_2prime = 0.5 * I * mu_ag * E3 * pycuda::exp(-1 * I * wag * time);
-        pycuda::complex<double> B_1 = 0.5 * I * mu_2aa * E1 * pycuda::exp(-1 * I * w2aa * time);
+        pycuda::complex<double> A_2prime = 0.5 * I * mu_ag * E3 * pycuda::exp(-1. * I * wag * time);
+        pycuda::complex<double> B_1 = 0.5 * I * mu_2aa * E1 * pycuda::exp(-1. * I * w2aa * time);
         pycuda::complex<double> B_2 = 0.5 * I * mu_2aa * E2 * pycuda::exp(I * w2aa * time);
-        pycuda::complex<double> B_2prime = 0.5 * I * mu_2aa * E3 * pycuda::exp(-1 * I * w2aa * time);
+        pycuda::complex<double> B_2prime = 0.5 * I * mu_2aa * E3 * pycuda::exp(-1. * I * w2aa * time);
 
-        for (int i=0; i<ham->nStates * ham->nStates; i++) out[i] = 0. + 0. * I;
+        for (int i=0; i<ham.nStates * ham.nStates; i++) out[i] = 0. + 0. * I;
 
-        if(ham->time_orderings[2] || ham->time_orderings[4])
-            out[1*ham->nStates + 0] = -1 * A_2;
-        if(ham->time_orderings[3] || ham->time_orderings[5])
-            out[2*ham->nStates + 0] = A_2prime;
-        if(ham->time_orderings[0] || ham->time_orderings[1])
-            out[3*ham->nStates + 0] = A_1;
-        if(ham->time_orderings[2])
-            out[5*ham->nStates + 1] = A_1;
-        if(ham->time_orderings[4])
-            out[6*ham->nStates + 1] = A_2prime;
-        if(ham->time_orderings[3])
-            out[4*ham->nStates + 2] = B_1;
-        if(ham->time_orderings[5])
-            out[6*ham->nStates + 2] = -1 * A_2;
-        if(ham->time_orderings[0])
-            out[4*ham->nStates + 3] = B_2prime;
-        if(ham->time_orderings[1])
-            out[5*ham->nStates + 3] = -1 * A_2;
-        if(ham->time_orderings[1] || ham->time_orderings[3])
+        if(ham.time_orderings[2] || ham.time_orderings[4])
+            out[1*ham.nStates + 0] = -1. * A_2;
+        if(ham.time_orderings[3] || ham.time_orderings[5])
+            out[2*ham.nStates + 0] = A_2prime;
+        if(ham.time_orderings[0] || ham.time_orderings[1])
+            out[3*ham.nStates + 0] = A_1;
+        if(ham.time_orderings[2])
+            out[5*ham.nStates + 1] = A_1;
+        if(ham.time_orderings[4])
+            out[6*ham.nStates + 1] = A_2prime;
+        if(ham.time_orderings[3])
+            out[4*ham.nStates + 2] = B_1;
+        if(ham.time_orderings[5])
+            out[6*ham.nStates + 2] = -1. * A_2;
+        if(ham.time_orderings[0])
+            out[4*ham.nStates + 3] = B_2prime;
+        if(ham.time_orderings[1])
+            out[5*ham.nStates + 3] = -1. * A_2;
+        if(ham.time_orderings[1] || ham.time_orderings[3])
         {
-            out[7*ham->nStates + 4] = B_2;
-            out[8*ham->nStates + 4] = -1 * A_2;
+            out[7*ham.nStates + 4] = B_2;
+            out[8*ham.nStates + 4] = -1. * A_2;
         }
-        if(ham->time_orderings[0] || ham->time_orderings[2])
+        if(ham.time_orderings[0] || ham.time_orderings[2])
         {
-            out[7*ham->nStates + 5] = -2 * A_2prime;
-            out[8*ham->nStates + 5] = B_2prime;
+            out[7*ham.nStates + 5] = -2. * A_2prime;
+            out[8*ham.nStates + 5] = B_2prime;
         }
-        if(ham->time_orderings[4] || ham->time_orderings[5])
+        if(ham.time_orderings[4] || ham.time_orderings[5])
         {
-            out[7*ham->nStates + 6] = -2 * A_1;
-            out[8*ham->nStates + 6] = B_1;
+            out[7*ham.nStates + 6] = -2. * A_1;
+            out[8*ham.nStates + 6] = B_1;
         }
 
-        for(int i=0; i<ham->nStates; i++) out[i*ham->nStates + i] = -1 * ham->Gamma[i];
+        for(int i=0; i<ham.nStates; i++) out[i*ham.nStates + i] = -1. * ham.Gamma[i];
     }
-    
+"""    
 

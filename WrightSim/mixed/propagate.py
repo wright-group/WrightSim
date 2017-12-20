@@ -47,6 +47,7 @@ def runge_kutta(t, efields, n_recorded, hamiltonian):
 
    # rho_emitted[s,t], s is out_group index, t is time index
     return rho_emitted
+
 muladd_cuda_source = """
 __device__ void muladd(pycuda::complex<double>* a, double b, pycuda::complex<double>* c, double d, int len, pycuda::complex<double>* out)
 {
@@ -62,7 +63,7 @@ __device__ void dot(pycuda::complex<double>* mat, pycuda::complex<double>* vec, 
 {
     for(int i=0; i<len; i++)
     {
-        pycuda::complex<double> sum = 0 + 0 * I;
+        pycuda::complex<double> sum = pycuda::complex<double>();
         for (int j=0; j<len; j++)
         {
             sum += vec[i] * mat[i + j * len];
@@ -80,7 +81,7 @@ __device__ void calc_efield_params(double* params, double mu_0, int n)
     for(int i=0; i < n; i++)
     {
         //sigma
-        params[1 + i*5] /= (2. * sqrt(log(2.));
+        params[1 + i*5] /= (2. * sqrt(log(2.)));
         //mu
         params[2 + i*5] -= mu_0;
         //freq
@@ -90,11 +91,11 @@ __device__ void calc_efield_params(double* params, double mu_0, int n)
     }
 }
 
-__device__ void calc_efield(double* params, int* phase_matching,  double t, int n, pycuda::complex<double> out)
+__device__ void calc_efield(double* params, int* phase_matching,  double t, int n, pycuda::complex<double>* out)
 {
-    for(int i=0; i < n i++)
+    for(int i=0; i < n; i++)
     {
-        out[i] = pycuda::exp(-1 * I * phase_matching[i] * (params[3 + i*5] * (t - params[2 + i*5]) + params[4 + i*5]));
+        out[i] = pycuda::exp(-1. * I * (double)(phase_matching[i]) * (params[3 + i*5] * (t - params[2 + i*5]) + params[4 + i*5]));
         out[i] *= params[0 + i*5] * exp(-1 * (t-params[2 + i*5])*(t-params[2 + i*5])/2./params[1 + i*5]/params[1 + i*5]);
     }
 }
@@ -107,57 +108,59 @@ __device__ pycuda::complex<double>* runge_kutta(const double time_start, const d
                                                const int n_recorded, Hamiltonian ham,
                                                pycuda::complex<double> *out)
 {
-    pycuda::complex<double> *H_cur = malloc(ham->nStates * ham->nStates * sizeof(pycuda::complex<double>));
-    pycuda::complex<double> *H_next = malloc(ham->nStates * ham->nStates * sizeof(pycuda::complex<double>));
+    pycuda::complex<double> *H_cur = (pycuda::complex<double>*)malloc(ham.nStates * ham.nStates * sizeof(pycuda::complex<double>));
+    pycuda::complex<double> *H_next = (pycuda::complex<double>*)malloc(ham.nStates * ham.nStates * sizeof(pycuda::complex<double>));
 
     int out_index = 0;
     int index=0;
-    int npoints = (int) ((time_end-time_start)/dt + 1;
+    
+    int npoints = (int)((time_end-time_start)/dt);
 
-    pycuda::complex<double>* rho_i = malloc(ham->nStates * sizeof(pycuda::complex<double>));
-    pycuda::complex<double>* temp_delta_rho = malloc(ham->nStates * sizeof(pycuda::complex<double>)); 
-    pycuda::complex<double>* temp_rho_i = malloc(ham->nStates * sizeof(pycuda::complex<double>)); 
-    pycuda::complex<double>* delta_rho = malloc(ham->nStates * sizeof(pycuda::complex<double>)); 
-    pycuda::complex<double>[nEfields] efields; 
+    pycuda::complex<double>* rho_i = (pycuda::complex<double>*)malloc(ham.nStates * sizeof(pycuda::complex<double>));
+    pycuda::complex<double>* temp_delta_rho = (pycuda::complex<double>*)malloc(ham.nStates * sizeof(pycuda::complex<double>)); 
+    pycuda::complex<double>* temp_rho_i = (pycuda::complex<double>*)malloc(ham.nStates * sizeof(pycuda::complex<double>)); 
+    pycuda::complex<double>* delta_rho = (pycuda::complex<double>*)malloc(ham.nStates * sizeof(pycuda::complex<double>)); 
+    pycuda::complex<double>* efields = (pycuda::complex<double>*)malloc(nEFields * sizeof(pycuda::complex<double>)); 
 
     calc_efield_params(efparams, mu_0, nEFields);
 
     calc_efield(efparams, phase_matching, time_start, nEFields, efields);
 
-    Hamiltonian_matrix(nEFields, efields, t, H_next);
+    Hamiltonian_matrix(ham, efields, time_start, H_next);
     for(double t = time_start; t < time_end; t += dt)
     {   
         pycuda::complex<double>* temp = H_cur;
         H_cur = H_next;
         H_next = temp;
         calc_efield(efparams, phase_matching, t+dt, nEFields, efields);
-        Hamiltonian_matrix(nEFields, efields + nEFields*(index+1), t+dt, H_next);
-        dot(H_cur, rho_i, ham->nStates, temp_delta_rho);
-        muladd(rho_i, 1., temp_delta_rho, dt, ham->nStates, temp_rho_i);
-        dot(H_next, temp_rho_i, ham->nStates, delta_rho);
-        muladd(temp_delta_rho, 1., delta_rho, 1., ham->nStates, delta_rho)
-        muladd(rho_i, 1., delta_rho, dt/2., ham->nStates, rho_i)
+        Hamiltonian_matrix(ham, efields, t+dt, H_next);
+        dot(H_cur, rho_i, ham.nStates, temp_delta_rho);
+        muladd(rho_i, 1., temp_delta_rho, dt, ham.nStates, temp_rho_i);
+        dot(H_next, temp_rho_i, ham.nStates, delta_rho);
+        muladd(temp_delta_rho, 1., delta_rho, 1., ham.nStates, delta_rho);
+        muladd(rho_i, 1., delta_rho, dt/2., ham.nStates, rho_i);
 
         if(index > npoints - n_recorded)
         {
-            for(int i=0; i < ham->nRecorded; i++)
-                out[out_index + i * n_recorded] = rho_i[ham->recorded_indices[i]];
+            for(int i=0; i < ham.nRecorded; i++)
+                out[out_index + i * n_recorded] = rho_i[ham.recorded_indices[i]];
             out_index++;
         }
         index++;
     }
     
-    dot(H_cur, ham->rho, ham->nStates, temp_delta_rho);
-    muladd(rho_i, 1., temp_delta_rho, dt, ham->nStates, rho_i);
-    for(int i=0; i < ham->nRecorded; i++)
-        out[out_index + i * n_recorded] = rho_i[ham->recorded_indices[i]];
+    dot(H_cur, rho_i, ham.nStates, temp_delta_rho);
+    muladd(rho_i, 1., temp_delta_rho, dt, ham.nStates, rho_i);
+    for(int i=0; i < ham.nRecorded; i++)
+        out[out_index + i * n_recorded] = rho_i[ham.recorded_indices[i]];
 
-    free(H_next;
+    free(H_next);
     free(H_cur);
     free(rho_i);
     free(temp_delta_rho);
     free(temp_rho_i);
     free(delta_rho);
+    free(efields);
     return out;
 }
 """
