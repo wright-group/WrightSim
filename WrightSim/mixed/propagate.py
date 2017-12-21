@@ -1,5 +1,4 @@
 import numpy as np
-from pycuda import driver as cuda
 
 def runge_kutta(t, efields, n_recorded, hamiltonian):
     """
