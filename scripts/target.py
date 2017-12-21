@@ -54,7 +54,7 @@ ham.recorded_elements = [7,8]
 
 # do scan
 begin = time.perf_counter()
-scan = exp.run(ham, mp='gpu')
+scan = exp.run(ham, mp='')
 print(time.perf_counter()-begin)
 gpuSig = scan.sig.copy()
 #with wt.kit.Timer():
