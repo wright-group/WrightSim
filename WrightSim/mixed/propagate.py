@@ -18,7 +18,7 @@ def runge_kutta(t, efields, n_recorded, hamiltonian):
     # can only call on n_recorded and t after efield_object.E is called
     dt = np.abs(t[1]-t[0])
     # extract attributes of the system
-    rho_emitted = np.empty((len(hamiltonian.recorded_indices), n_recorded), dtype=np.complex64)
+    rho_emitted = np.empty((len(hamiltonian.recorded_indices), n_recorded), dtype=np.complex128)
 
     # H has 3 dimensions: time and the 2 matrix dimensions
     H = hamiltonian.matrix(efields, t)
@@ -66,7 +66,7 @@ __device__ void dot(pycuda::complex<double>* mat, pycuda::complex<double>* vec, 
         pycuda::complex<double> sum = pycuda::complex<double>();
         for (int j=0; j<len; j++)
         {
-            sum += vec[i] * mat[i + j * len];
+            sum += vec[j] * mat[i * len + j];
         }
         out[i] = sum;
     }
@@ -83,7 +83,7 @@ __device__ void calc_efield_params(double* params, double mu_0, int n)
         //sigma
         params[1 + i*5] /= (2. * sqrt(log(2.)));
         //mu
-        params[2 + i*5] -= mu_0;
+        //params[2 + i*5] -= mu_0;
         //freq
         params[3 + i*5] *= 2 * M_PI * 3e-5;
         //area -> y
@@ -95,7 +95,7 @@ __device__ void calc_efield(double* params, int* phase_matching,  double t, int 
 {
     for(int i=0; i < n; i++)
     {
-        out[i] = pycuda::exp(-1. * I * (double)(phase_matching[i]) * (params[3 + i*5] * (t - params[2 + i*5]) + params[4 + i*5]));
+        out[i] = pycuda::exp(-1. * I * ((double)(phase_matching[i]) * (params[3 + i*5] * (t - params[2 + i*5]) + params[4 + i*5])));
         out[i] *= params[0 + i*5] * exp(-1 * (t-params[2 + i*5])*(t-params[2 + i*5])/2./params[1 + i*5]/params[1 + i*5]);
     }
 }
@@ -108,8 +108,13 @@ __device__ pycuda::complex<double>* runge_kutta(const double time_start, const d
                                                const int n_recorded, Hamiltonian ham,
                                                pycuda::complex<double> *out)
 {
-    pycuda::complex<double> *H_cur = (pycuda::complex<double>*)malloc(ham.nStates * ham.nStates * sizeof(pycuda::complex<double>));
-    pycuda::complex<double> *H_next = (pycuda::complex<double>*)malloc(ham.nStates * ham.nStates * sizeof(pycuda::complex<double>));
+    //pycuda::complex<double> *H_cur = (pycuda::complex<double>*)malloc(ham.nStates * ham.nStates * sizeof(pycuda::complex<double>));
+   // pycuda::complex<double> *H_next = (pycuda::complex<double>*)malloc(ham.nStates * ham.nStates * sizeof(pycuda::complex<double>));
+    pycuda::complex<double> buf1[81];
+    pycuda::complex<double> buf2[81];
+
+    pycuda::complex<double>* H_cur = buf1;
+    pycuda::complex<double>* H_next = buf2;
 
     int out_index = 0;
     int index=0;
@@ -122,9 +127,13 @@ __device__ pycuda::complex<double>* runge_kutta(const double time_start, const d
     pycuda::complex<double>* delta_rho = (pycuda::complex<double>*)malloc(ham.nStates * sizeof(pycuda::complex<double>)); 
     pycuda::complex<double>* efields = (pycuda::complex<double>*)malloc(nEFields * sizeof(pycuda::complex<double>)); 
 
+    rho_i[0] = 1.;
+    for(int i=1; i<ham.nStates; i++) rho_i[i] = 0.;
+
     calc_efield_params(efparams, mu_0, nEFields);
 
     calc_efield(efparams, phase_matching, time_start, nEFields, efields);
+
 
     Hamiltonian_matrix(ham, efields, time_start, H_next);
     for(double t = time_start; t < time_end; t += dt)
@@ -143,7 +152,9 @@ __device__ pycuda::complex<double>* runge_kutta(const double time_start, const d
         if(index > npoints - n_recorded)
         {
             for(int i=0; i < ham.nRecorded; i++)
+            {
                 out[out_index + i * n_recorded] = rho_i[ham.recorded_indices[i]];
+            }
             out_index++;
         }
         index++;
@@ -154,8 +165,8 @@ __device__ pycuda::complex<double>* runge_kutta(const double time_start, const d
     for(int i=0; i < ham.nRecorded; i++)
         out[out_index + i * n_recorded] = rho_i[ham.recorded_indices[i]];
 
-    free(H_next);
-    free(H_cur);
+    //free(H_next);
+    //free(H_cur);
     free(rho_i);
     free(temp_delta_rho);
     free(temp_rho_i);
