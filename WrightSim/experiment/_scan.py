@@ -21,8 +21,8 @@ def do_work(arglist):
     pulse_class.timestep = timestep
     t, efields = pulse_class.pulse(efpi, pm=pm)
     out = evolve_func(t, efields, iprime, H)
-    if indices[-1] == 0:
-       print(indices, pulse_class.timestep, str(iprime) + '              \r',)
+    #if indices[-1] == 0:
+    #   print(indices, pulse_class.timestep, str(iprime) + '              \r',)
     return indices, out
 
 
@@ -80,10 +80,10 @@ class Scan:
         return efp
 
     kernel_cuda_source = """
-    __global__ void kernel(double time_start, double time_end, double dt, int nEFields, double* efparams, int* phase_matching, int n_recorded, Hamiltonian ham, pycuda::complex<double>* out)
+    __global__ void kernel(double time_start, double time_end, double dt, int nEFields, double* efparams, int* phase_matching, int n_recorded, Hamiltonian* ham, pycuda::complex<double>* out)
     {
         int idx = threadIdx.x + blockIdx.x * blockDim.x;
-        runge_kutta(time_start, time_end, dt, nEFields, efparams + (idx*5*nEFields), *(efparams + 2), phase_matching, n_recorded, ham, out + (idx*ham.nRecorded*n_recorded));
+        runge_kutta(time_start, time_end, dt, nEFields, efparams + (idx*5*nEFields), *(efparams + 2), phase_matching, n_recorded, *ham, out + (idx*ham->nRecorded*n_recorded));
     }
     """
 
@@ -109,7 +109,7 @@ class Scan:
         self.pulse_class.early_buffer = self.early_buffer
         self.pulse_class.late_buffer = self.late_buffer
         self.pulse_class.pm = self.pm
-        self.sig = np.empty(shape, dtype=np.complex64)
+        self.sig = np.empty(shape, dtype=np.complex128)
         if mp == 'gpu':
             from pycuda import driver as cuda
             from pycuda.compiler import SourceModule
@@ -117,11 +117,10 @@ class Scan:
             hamPtr = cuda.mem_alloc(self.ham.cuda_mem_size)
             self.ham.to_device(hamPtr)
             efpPtr = cuda.to_device(self.efp)
-            pmPtr = cuda.to_device(np.array(self.pm))
-            sigPtr = cuda.mem_alloc(self.sig.nbytes * 2)
-            print(self.sig.nbytes)
+            pmPtr = cuda.to_device(np.array(self.pm, dtype=np.int32))
+            sigPtr = cuda.mem_alloc(self.sig.nbytes)
 
-            d_ind = 2#self.pulse_class.cols['d']
+            d_ind = self.pulse_class.cols.index('d')
             start = np.min(self.efp[..., d_ind]) - self.early_buffer
             stop = np.max(self.efp[..., d_ind]) + self.late_buffer
 
@@ -139,17 +138,17 @@ class Scan:
                         for ind in np.ndindex(self.array.shape)]
             pool = Pool(processes=cpu_count())
             chunksize = int(self.array.size / cpu_count())
-            print('chunksize:', chunksize)
-            with wt.kit.Timer():
-                results = pool.map(do_work, arglist, chunksize=chunksize)
-                pool.close()
-                pool.join()
+            #print('chunksize:', chunksize)
+            #with wt.kit.Timer():
+            results = pool.map(do_work, arglist, chunksize=chunksize)
+            pool.close()
+            pool.join()
             # now write to the np array
             for i in range(len(results)):
                 self.sig[results[i][0]] = results[i][1]
             del results
         else:
-            with wt.kit.Timer():
+            #with wt.kit.Timer():
                 for idx in np.ndindex(self.shape):
                     t, efields = self.pulse_class.pulse(self.efp[idx], pm=self.pm)
                     self.sig[idx] = self.ham.propagator(t, efields, self.iprime, self.ham)
