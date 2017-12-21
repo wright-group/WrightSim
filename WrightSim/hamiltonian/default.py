@@ -1,6 +1,5 @@
 
 import numpy as np
-import pycuda.driver as cuda
 
 from ..mixed import propagate
 
@@ -33,10 +32,10 @@ class Hamiltonian:
                         labels=['00','01 -2','10 2\'','10 1','20 1+2\'','11 1-2','11 2\'-2', '10 1-2+2\'', '21 1-2+2\''],
                         time_orderings=list(range(1,7)), recorded_indices = [7, 8]):
         if rho is None:
-            self.rho = np.zeros(len(labels), dtype=np.complex64)
+            self.rho = np.zeros(len(labels), dtype=np.complex128)
             self.rho[0] = 1.
         else:
-            self.rho = rho
+            self.rho = np.array(rho, dtype=np.complex128)
 
         if tau is None:
             tau = 50. #fs
@@ -46,9 +45,9 @@ class Hamiltonian:
             self.tau = tau
 
         if mu is None:
-            self.mu = np.array([1., 1.])
+            self.mu = np.array([1., 1.], dtype=np.complex128)
         else:
-            self.mu = mu
+            self.mu = np.array(mu, dtype=np.complex128)
 
         if omega is None:
             w_ag = w_central
@@ -72,6 +71,7 @@ class Hamiltonian:
         self.Gamma = 1./self.tau
 
     def to_device(self, pointer):
+        import pycuda.driver as cuda
         rho = cuda.to_device(self.rho)
         mu = cuda.to_device(self.mu)
         omega = cuda.to_device(self.omega)
@@ -80,20 +80,20 @@ class Hamiltonian:
         tos = [1 if i in self.time_orderings else 0 for i in range(1,7)]
 
         time_orderings = cuda.to_device(np.array(tos, dtype=np.int8))
-        recorded_indices = cuda.to_device(np.array(self.recorded_indices))
+        recorded_indices = cuda.to_device(np.array(self.recorded_indices, dtype=np.int32))
 
-        cuda.memcpy_htod(int(pointer) + 0, memoryview(np.int32(len(self.rho))))
-        cuda.memcpy_htod(int(pointer) + 4, memoryview(np.int32(len(self.mu))))
+        cuda.memcpy_htod(pointer, np.array([len(self.rho)], dtype=np.int32))
+        cuda.memcpy_htod(int(pointer) + 4, np.array([len(self.mu)], dtype=np.int32))
         #TODO: generalize nTimeOrderings
-        cuda.memcpy_htod(int(pointer) + 8, memoryview(np.int32(6)))
-        cuda.memcpy_htod(int(pointer) + 12, memoryview(np.int32(len(self.recorded_indices))))
+        cuda.memcpy_htod(int(pointer) + 8, np.array([6], dtype=np.int32))
+        cuda.memcpy_htod(int(pointer) + 12, np.array([len(self.recorded_indices)], dtype=np.int32))
 
-        cuda.memcpy_htod(int(pointer) + 16, memoryview(np.int32(int(rho))))
-        cuda.memcpy_htod(int(pointer) + 24, memoryview(np.int32(int(mu))))
-        cuda.memcpy_htod(int(pointer) + 32, memoryview(np.int32(int(omega))))
-        cuda.memcpy_htod(int(pointer) + 40, memoryview(np.int32(int(Gamma))))
-        cuda.memcpy_htod(int(pointer) + 48, memoryview(np.int32(int(time_orderings))))
-        cuda.memcpy_htod(int(pointer) + 56, memoryview(np.int32(int(recorded_indices))))
+        cuda.memcpy_htod(int(pointer) + 16, np.intp(int(rho)))
+        cuda.memcpy_htod(int(pointer) + 24, np.intp(int(mu)))
+        cuda.memcpy_htod(int(pointer) + 32, np.intp(int(omega)))
+        cuda.memcpy_htod(int(pointer) + 40, np.intp(int(Gamma)))
+        cuda.memcpy_htod(int(pointer) + 48, np.intp(int(time_orderings)))
+        cuda.memcpy_htod(int(pointer) + 56, np.intp(int(recorded_indices)))
 
         
 
@@ -125,7 +125,7 @@ class Hamiltonian:
         B_2 = 0.5j * mu_2aa * E2 * np.exp(1j * w2aa * time)
         B_2prime = 0.5j * mu_2aa * E3 * np.exp(-1j * w2aa * time)
 
-        out = np.zeros((len(time), len(energies), len(energies)), dtype=np.complex64)
+        out = np.zeros((len(time), len(energies), len(energies)), dtype=np.complex128)
 
         if 3 in self.time_orderings or 5 in self.time_orderings:
             out[:,1,0] = -A_2
@@ -171,8 +171,8 @@ class Hamiltonian:
         double wag = ham.omega[1];
         double w2aa = ham.omega[8];
 
-        pycuda::complex<double> mu_ag =  ham.mu[0];
-        pycuda::complex<double> mu_2aa = ham.mu[1];
+        pycuda::complex<double> mu_ag =  1.;//ham.mu[0];
+        pycuda::complex<double> mu_2aa = 1.;//ham.mu[1];
 
         pycuda::complex<double> E1 =  efields[0];
         pycuda::complex<double> E2 =  efields[1];
@@ -186,7 +186,7 @@ class Hamiltonian:
         pycuda::complex<double> B_2 = 0.5 * I * mu_2aa * E2 * pycuda::exp(I * w2aa * time);
         pycuda::complex<double> B_2prime = 0.5 * I * mu_2aa * E3 * pycuda::exp(-1. * I * w2aa * time);
 
-        for (int i=0; i<ham.nStates * ham.nStates; i++) out[i] = 0. + 0. * I;
+        for (int i=0; i<ham.nStates * ham.nStates; i++) out[i] = pycuda::complex<double>();
 
         if(ham.time_orderings[2] || ham.time_orderings[4])
             out[1*ham.nStates + 0] = -1. * A_2;
