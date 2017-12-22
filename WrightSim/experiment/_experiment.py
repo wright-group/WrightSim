@@ -7,7 +7,8 @@ import numpy as np
 
 import WrightTools as wt
 
-from . import pulse
+from . import _pulse
+from ._scan import Scan
 
 
 # --- define --------------------------------------------------------------------------------------
@@ -28,7 +29,7 @@ late_buffer = 400.0
 class Experiment:
     """Experiment."""
 
-    def __init__(self, axes, name, pm, pulse_class_name):
+    def __init__(self, axes, name, pm, pulse_class):
         # basic attributes
         self.axes = axes
         for a in self.axes:
@@ -40,11 +41,11 @@ class Experiment:
         self.early_buffer = early_buffer
         self.late_buffer = late_buffer
         # pulse
-        self.pulse_class_name = pulse_class_name
-        self.pulses = [pulse.__dict__[self.pulse_class_name]() for _ in self.pm]
+        self.pulse_class = pulse_class
+        self.pulses = [self.pulse_class() for _ in self.pm]
 
     def __repr__(self):
-        return 'WrightSim.Experiment object \'{0}\' at {1}'.format(self.name, str(id(self)))
+        return '<WrightSim.Experiment object \'{0}\' at {1}>'.format(self.name, str(id(self)))
 
     @property
     def active_axes(self):
@@ -53,6 +54,25 @@ class Experiment:
     @property
     def axis_names(self):
         return [a.name for a in self.axes]
+
+    def run(self, hamiltonian, mp=True):
+        """Run the experiment.
+
+        Parameters
+        ----------
+        hamiltonian : WrightSim Hamiltonian
+            Hamiltonian.
+        mp : boolean (optional)
+            Toggle CPU multiprocessing. Default is True.
+
+        Returns
+        -------
+        WrightSim Scan
+            Scan that was run."""
+        out = Scan(self, hamiltonian)
+        out.run(mp=mp)
+        # finish
+        return out
 
     def set_axis(self, axis_name, points):
         '''

@@ -7,6 +7,8 @@ creates an (d2, w1, w2) "movie" scan
 import NISE as n
 import os
 import numpy as np
+import sys
+import time
 
 def simulate(plot=False):
     if __name__ == '__main__':
@@ -28,9 +30,9 @@ def simulate(plot=False):
                      tau_ag = Delta_t,
                      tau_2aa = Delta_t)
         
-        H.TOs = np.array([5])
+        H.TOs = np.array([1,2,3,4,5,6])
         
-        print([s for s in dir(H) if s[:2] != '__'])
+        #print([s for s in dir(H) if s[:2] != '__'])
         
         
         # --- set experiment details ------------------------------------------
@@ -39,10 +41,10 @@ def simulate(plot=False):
         w2 = t.w2
         d2 = t.d2 # tau_12
         
-        w1.points = np.linspace(-2.5, 2.5, 32) 
+        w1.points = np.linspace(-2.5, 2.5, sys.argv[1]) 
         w1.points*= 4 * np.log(2) / Delta_t * 1/(2*np.pi*3e-5)
         w2.points = w1.points.copy()
-        d2.points = np.linspace(-2*Delta_t, 4*Delta_t, 16)
+        d2.points = np.linspace(-2*Delta_t, 4*Delta_t, sys.argv[2])
         
         t.exp.set_coord(t.d1, 0.) # set tau_22' to zero delay
         t.exp.set_coord(t.ss, Delta_t) # set pulse widths
@@ -66,13 +68,15 @@ def simulate(plot=False):
         def run_if_not_exists(folder, scan, mp=True, plot=False):
             if not os.path.exists(folder): 
                 os.makedirs(folder)
-                plot=True
+                #plot=True
             if len(os.listdir(folder)) != 0:
-                print('scan has already been run; importing {0}'.format(folder))
+                #print('scan has already been run; importing {0}'.format(folder))
                 scan = n.lib.scan.Scan._import(folder)
             else: 
+                begin = time.perf_counter()
                 scan.run(autosave=False, mp=mp)
-                scan.save(full_name=folder)
+                print(time.perf_counter() - begin)
+                #scan.save(full_name=folder)
         
             measure = m.Measure(scan, m.Mono, m.SLD)
             measure.run(save=False)
@@ -82,12 +86,12 @@ def simulate(plot=False):
             return scan, measure.pol
         
         scan = t.exp.scan(t.d2, t.w1, t.w2, H=H, inhom_object=inhom1)
-        folder = os.path.join(here, 'sim1')
+        folder = os.path.join(here, sys.argv[3])
         
-        return run_if_not_exists(folder, scan, plot=plot) # to run again delete folder
+        return run_if_not_exists(folder, scan, plot=plot, mp=False) # to run again delete folder
     else: return None,None
         
-scan, pol = simulate(plot=True)
+scan, pol = simulate(plot=False)
 
 
 
