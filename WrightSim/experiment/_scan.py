@@ -80,10 +80,13 @@ class Scan:
         return efp
 
     kernel_cuda_source = """
-    __global__ void kernel(double time_start, double time_end, double dt, int nEFields, double* efparams, int* phase_matching, int n_recorded, Hamiltonian* ham, pycuda::complex<double>* out)
+    __global__ void kernel(double time_start, double time_end, double dt, int nEFields,
+                           double* efparams, int* phase_matching, int n_recorded, Hamiltonian* ham,
+                           pycuda::complex<double>* out)
     {
         int idx = threadIdx.x + blockIdx.x * blockDim.x;
-        runge_kutta(time_start, time_end, dt, nEFields, efparams + (idx*5*nEFields), *(efparams + 2), phase_matching, n_recorded, *ham, out + (idx*ham->nRecorded*n_recorded));
+        runge_kutta(time_start, time_end, dt, nEFields, efparams + (idx * 5 * nEFields),
+                    phase_matching, n_recorded, *ham, out + (idx * ham->nRecorded * n_recorded));
     }
     """
 
@@ -95,7 +98,7 @@ class Scan:
         mp : {False, 'cpu', 'gpu'} (optional)
             Select multiprocessing: False (or '' or None) means single-threaded.
                                     'gpu' indicates to use the CUDA implementation
-                                    Any other value which evaluates to `True` indicates cpu multiprocessed.
+                                    Any other value which evaluates to ``True`` indicates cpu multiprocessed.
                                     Default is 'cpu'.
 
         Returns
@@ -124,10 +127,15 @@ class Scan:
             start = np.min(self.efp[..., d_ind]) - self.early_buffer
             stop = np.max(self.efp[..., d_ind]) + self.late_buffer
 
-            mod = SourceModule(self.ham.cuda_struct + self.ham.cuda_matrix_source + propagate.muladd_cuda_source + propagate.dot_cuda_source + propagate.pulse_cuda_source + propagate.runge_kutta_cuda_source + Scan.kernel_cuda_source)
+            mod = SourceModule(self.ham.cuda_struct + self.ham.cuda_matrix_source +
+                               propagate.muladd_cuda_source + propagate.dot_cuda_source +
+                               propagate.pulse_cuda_source + propagate.runge_kutta_cuda_source +
+                               Scan.kernel_cuda_source)
 
             kernel = mod.get_function('kernel')
-            kernel(start, stop, np.float64(self.timestep), np.intp(3), efpPtr, pmPtr, np.intp(self.iprime), hamPtr, sigPtr, grid=(self.array.size//256,1), block=(256,1,1))
+            kernel(start, stop, np.float64(self.timestep), np.intp(3), efpPtr,
+                   pmPtr, np.intp(self.iprime), hamPtr, sigPtr,
+                   grid=(self.array.size//256,1), block=(256,1,1))
 
             cuda.memcpy_dtoh(self.sig, sigPtr)
         elif mp:
