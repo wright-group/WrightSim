@@ -1,0 +1,9 @@
+*.aux
+*.log
+*.nav
+*.out
+*.xml
+*.snm
+*.synctex.gz
+*.toc
+*blx.bib

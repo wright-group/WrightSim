@@ -1,0 +1,200 @@
+% document
+\documentclass[11pt, aspectratio=169, final]{beamer}
+\usepackage{adjustbox}
+\adjustboxset*{center}
+\usepackage{color}
+\usepackage{xcolor}
+\usepackage{textpos}
+
+% theme coercion
+\usetheme[width=2cm]{Hannover}
+\usecolortheme{beaver}
+\definecolor{base03}{HTML}{002B36}
+\definecolor{base02}{HTML}{073642}
+\definecolor{base01}{HTML}{586E75}
+\definecolor{base3}{HTML}{FDF6E3}
+\definecolor{solarblue}{HTML}{268bd2}
+\definecolor{solarmagenta}{HTML}{D33682}
+\setbeamercolor*{palette primary}{fg=darkred!60!black, bg=base01}  % title background
+\setbeamercolor*{sidebar}{fg=darkred, bg=base03}
+\setbeamercolor{frametitle}{bg=base01, fg=base3}
+\setbeamercolor{title}{fg=base3}
+\setbeamercolor{palette sidebar primary}{fg=base3}  % sidebar subsection
+\setbeamercolor{palette sidebar secondary}{fg=base3}  % sidebar section
+\setbeamercolor{palette sidebar tertiary}{fg=base3}  % sidebar name
+\setbeamercolor{palette sidebar quaternary}{fg=base3}  % sidebar title
+\setbeamercolor*{item}{fg=base01}
+\setbeamertemplate{itemize items}[default]
+\setbeamercovered{transparent}
+\setbeamertemplate{navigation symbols}{}
+
+% text
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{enumerate}
+\usepackage{soul}
+\sethlcolor{yellow}
+\renewcommand<>{\hl}[1]{\only#2{\beameroriginal{\hl}}{#1}}
+
+% code
+%\usepackage{minted}
+%\definecolor{bg}{rgb}{0.95,0.95,0.95}
+%\newminted{python}{fontsize=\scriptsize, numbersep=8pt,	gobble=0, frame=none, bgcolor=bg,	framesep=2mm, frame=leftline}
+
+% quotes
+\usepackage[T1]{fontenc}
+\usepackage{libertine}
+\usepackage{framed}
+\newcommand*\openquote{\makebox(25,-22){\scalebox{5}{``}}}
+\newcommand*\closequote{\makebox(25,-22){\scalebox{5}{''}}}
+\colorlet{shadecolor}{base3}
+\makeatletter
+\newif\if@right
+\def\shadequote{\@righttrue\shadequote@i}
+\def\shadequote@i{\begin{snugshade}}
+		\def\endshadequote{%
+			\if@right\hfill\fi\end{snugshade}}
+\@namedef{shadequote*}{\@rightfalse\shadequote@i}
+\@namedef{endshadequote*}{\endshadequote}
+\makeatother
+
+% graphics
+\usepackage{graphicx}
+\usepackage{animate}
+\usepackage{xmpmulti}
+
+% bibliography
+\usepackage[style=verbose,backend=bibtex,bibstyle=numeric,sorting=none]{biblatex}
+\bibliography{bib}
+\renewcommand\footnoterule{{\color{black} \hrule height 0pt}} % no line above footnotes
+\renewcommand{\footnotesize}{\tiny}
+\setbeamercolor{bibliography entry author}{fg=black,bg=black}
+\setbeamercolor{bibliography entry title}{fg=black,bg=black}
+\setbeamercolor{bibliography entry location}{fg=black,bg=black}
+\setbeamercolor{bibliography entry note}{fg=black,bg=black}
+
+% http://tex.stackexchange.com/questions/41683/why-is-it-that-coloring-in-soul-in-beamer-is-not-visible
+\makeatletter
+\newcommand\SoulColor{%
+	\let\set@color\beamerorig@set@color
+	\let\reset@color\beamerorig@reset@color}
+\makeatother
+\SoulColor
+
+% logo (not built-in to hannover)
+\addtobeamertemplate{headline}{}{%
+\begin{textblock*}{\paperwidth}(0.5cm,\textheight-1.75cm)
+	\includegraphics[width=1cm]{logo} % logo of my university
+\end{textblock*}}
+
+\title{\textbf{WrightSim}}
+\author{Kyle Sunden}
+%\subtitle{}
+
+\institute{University of Wisconsin--Madison}
+\date{\today}
+%\subject{}
+
+\begin{document}
+\maketitle
+
+\section{Goals}
+
+\begin{frame}{\textbf{Goals}}
+%TODO bulleted list of goals
+\end{frame}
+
+\begin{frame}{\textbf{Sample Spectrum}}
+%TODO include image/caption
+\end{frame}
+
+
+\section{Theory}
+
+\begin{frame}{\textbf{Introduction}}
+	Here is some text
+%TODO: Text intro
+\end{frame}
+
+\begin{frame}{\textbf{Pathways}}
+%TODO include image/caption
+\end{frame}
+
+\begin{frame}{\textbf{Finite state automaton}}
+%TODO include image/caption, and rho vector
+\end{frame}
+
+\begin{frame}{\textbf{Hamiltonian Matrix}}
+%TODO include Variables, matrix, and short discription
+\end{frame}
+
+
+\section{\texttt{NISE}}
+
+\begin{frame}{\texttt{NISE}}
+	Here is some text
+    %TODO text on NISE
+\end{frame}
+
+\section{\textbf{Algorithmic Improvements}}
+
+\begin{frame}{\textbf{Algorithmic Improvements}}
+	Here is some text
+    %TODO text on improvements
+\end{frame}
+
+\begin{frame}{\textbf{Profile trace of \texttt{NISE}}}
+	Here is some text
+    %TODO include image
+\end{frame}
+
+\begin{frame}{\textbf{Profile trace of \texttt{WrightSim}}}
+	Here is some text
+    %TODO include image
+\end{frame}
+
+\section{\textbf{Parallel Implementations}}
+
+\begin{frame}{\textbf{Parallel Implementations}}
+	Here is some text
+    %TODO text
+\end{frame}
+
+\subsection{Scaling Analysis}
+\begin{frame}{\textbf{Scaling Analysis}}
+	Here is some text
+    %TODO image
+\end{frame}
+
+\subsection{Limitations}
+
+\begin{frame}{\textbf{Limitations}}
+	Here is some text
+    %TODO text
+\end{frame}
+
+
+\section{\textbf{Future Work}}
+
+\subsection{Features}
+
+\subsection{Usability}
+
+\subsection{Algorithmic Improvements}
+
+\section{\textbf{Conclusions}}
+
+\subsection{Acknowledgements}
+
+\section{\textbf{References}}
+
+
+
+
+
+
+
+
+
+
+\end{document}
