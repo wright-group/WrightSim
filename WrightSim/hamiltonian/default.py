@@ -35,42 +35,45 @@ class Hamiltonian:
 
         Parameters
         ----------
-        rho : 1-D array <Complex>
+        rho : 1-D array <Complex> (optional)
             The initial density vector, length defines N.
             Default is 1. in the ground state (index 0), and 0. everywhere else.
-        tau : scalar or 1-D array
+        tau : scalar or 1-D array (optional)
             The lifetime of the states in femptoseconds.
-            If tau is scalar, the same lifetime is used for all transitions,
-                except populations, which default to np.inf.
-            Default is 50. fs (scalar, then brodcast as above.
-        mu : 1-D array <Complex>
-            The magnetic suceptabilities used either in computing state densities or output intensities
+            For coherences, this is the pure dephasing time.
+            For populations, this is the population lifetime.
+            If tau is scalar, the same dephasing time is used for all coherences,
+                              Populations do not decay by default (inf lifetime).
+            This value is converted into a rate of decay, Gamma, by the multiplicative inverse.
+            Default is 50.0 fs dephasing for all coherences, infinite for populations.
+        mu : 1-D array <Complex> (optional)
+            The dipole moments used either in computing state densities or output intensities
             Array like structures are converted to the proper data type.
-            Order mattersd, and meaning is dependent on the individual Hamiltonian.
-            Default is two values, both initially 1.
-        omega : 1-D array <float64>
+            Order matters, and meaning is dependent on the individual Hamiltonian.
+            Default is two values, both initially 1.0.
+        omega : 1-D array <float64> (optional)
             The energies of various transitions.
-            The defalut uses w_central and coupling parameters to compute the appropriate
+            The default uses w_central and coupling parameters to compute the appropriate
                 values for a TRIVE Hamiltonian
-        w_central : float
+        w_central : float (optional)
             The cetral frequency of a resonance for a TRIVE Hamiltonian.
-            Used only when omega is None.
-        coupling : float
+            Used only when ``omega`` is ``None``.
+        coupling : float (optional)
             The copuling of states for a TRIVE Hamiltonian.
-            Used only when omega is None.
-        propagator : function
+            Used only when ``omega`` is ``None``.
+        propagator : function (optional)
             The evolution function to use to evolve the density matrix over time.
-            Default is runge_kutta.
-        phase_cycle : bool
+            Default is ``runge_kutta``.
+        phase_cycle : bool (optional)
             Whether or not to use phase cycling.
             Not applicable to all Hamiltonians.
             Default is ``False``
-        labels : list of string
+        labels : list of string (optional)
             Human readable labels for the states. Not used in computation, only to keep track.
-        time_orderings : list of int
+        time_orderings : list of int (optional)
             Which time orderings to use in the simulation.
             Default is all for a three interaction process: ``[1,2,3,4,5,6]``.
-        recorded_indices : list of int
+        recorded_indices : list of int (optional)
             Which density vector states to record through the simulation.
             Default is [7, 8], the output of a TRIVE Hamiltonian.
 
@@ -187,7 +190,7 @@ class Hamiltonian:
         wag  = energies[1]
         w2aa = energies[-1]
         
-        # Define magnetic susceptabilities
+        # Define dipole moments
         mu_ag = self.mu[0]
         mu_2aa = self.mu[-1]
     
@@ -245,7 +248,8 @@ class Hamiltonian:
     /**
      *  Hamiltonian_matrix: Computes the Hamiltonian matrix for an indevidual time step.
      *  NOTE: This differs from the Python implementation, which computes the full time 
-     *          dependant hamiltonian, this only computes for a single time step (to conserve memory).
+     *          dependant hamiltonian, this only computes for a single time step
+     *          (to conserve memory).
      * 
      *  Parameters
      *  ----------
@@ -267,7 +271,7 @@ class Hamiltonian:
         double wag = ham.omega[1];
         double w2aa = ham.omega[8];
 
-        // Define magnetic dipoles
+        // Define dipoles
         //TODO: don't assume one, generalize
         pycuda::complex<double> mu_ag =  1.;//ham.mu[0];
         pycuda::complex<double> mu_2aa = 1.;//ham.mu[1];
