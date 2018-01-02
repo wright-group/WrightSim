@@ -6,6 +6,7 @@
 \usepackage{xcolor}
 \usepackage{textpos}
 
+\usepackage{amsmath,amsfonts,amsthm} % Math packages
 % theme coercion
 \usetheme[width=2cm]{Hannover}
 \usecolortheme{beaver}
@@ -119,8 +120,9 @@
 \end{frame}
 
 \begin{frame}{\textbf{Pathways}}
+\begin{center}
 \includegraphics[height=\textheight]{WMELs}
-%TODO include image/caption
+\end{center}
 \end{frame}
 
 \begin{frame}{\textbf{Finite state automaton}}
@@ -128,12 +130,45 @@
 \column{0.8\textwidth}
 \includegraphics[width=\textwidth]{Matrix_Flow_Diagram}
 \column{0.2\textwidth}
-%TODO include image/caption, and rho vector
+\begin{math}
+\overline{\rho} \equiv
+\begin{bmatrix}
+\tilde{\rho}_{00} \\
+\tilde{\rho}_{01}^{{-2}} \\
+\tilde{\rho}_{10}^{{2^\prime}} \\
+\tilde{\rho}_{10}^{{1}} \\
+\tilde{\rho}_{20}^{{1+2^\prime}} \\
+\tilde{\rho}_{11}^{{1-2}} \\
+\tilde{\rho}_{11}^{{2^\prime-2}} \\
+\tilde{\rho}_{10}^{{1-2+2^\prime}} \\
+\tilde{\rho}_{21}^{{1-2+2^\prime}}
+\end{bmatrix}
+\end{math}
 \end{columns}
 \end{frame}
 
 \begin{frame}{\textbf{Hamiltonian Matrix}}
-%TODO include Variables, matrix, and short discription
+%\begin{math}
+%A_1 &\equiv& \frag{i} {2} \mu_{10}e^{-i\omega_1\tau_1)c_1(t-\tau_1)e^{i(\omega_1-\omega_{10})t} \\
+%A_2 &\equiv& \frag{i} {2} \mu_{10}e^{-i\omega_2\tau_2)c_2(t-\tau_2)e^{i(\omega_2-\omega_{10})t} \\
+%A_{2^\prime} &\equiv& \frag{i} {2} \mu_{10}e^{-i\omega_{2^\prime}\tau_{2^\prime})c_{2^\prime}(t-\tau_{2^\prime})e^{i(\omega_{2^\prime}-\omega_{10})t} \\
+%B_1 &\equiv& \frag{i} {2} \mu_{21}e^{-i\omega_1\tau_1)c_1(t-\tau_1)e^{i(\omega_1-\omega_{21})t} \\
+%B_2 &\equiv& \frag{i} {2} \mu_{21}e^{-i\omega_2\tau_2)c_2(t-\tau_2)e^{i(\omega_2-\omega_{21})t} \\
+%B_{2^\prime} &\equiv& \frag{i} {2} \mu_{21}e^{-i\omega_{2^\prime}\tau_{2^\prime})c_1(t-\tau_{2^\prime})e^{i(\omega_{2^\prime}-\omega_{21})t} \\
+\begin{math}
+\overline{\overline{Q}} \equiv
+\begin{bmatrix}
+	0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+	-A_2 & -\Gamma_{10} & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+	A_{2^\prime} & 0 & -\Gamma_{10} & 0 & 0 & 0 & 0 & 0 & 0 \\
+	A_1 & 0 & 0 & -\Gamma_{10} & 0 & 0 & 0 & 0 & 0 \\
+	0 & 0 & B_1 & B_{2^\prime} & -\Gamma_{20} & 0 & 0 & 0 & 0 \\
+	0 & A_1 & 0 & -A_2 & 0 & -\Gamma_{11} & 0 & 0 & 0 \\
+	0 & A_{2^\prime} & -A_2 & 0 & 0 & 0 & -\Gamma_{11} & 0 & 0 \\
+	0 & 0 & 0 & 0 & B_2 & -2A_{2^\prime} & -2A_1 & -\Gamma_{10} & 0 \\
+	0 & 0 & 0 & 0 & -A_2 & B_{2^\prime} & B_1 & 0 & -\Gamma_{21}
+\end{bmatrix}
+\end{math}
 \end{frame}
 
 
@@ -173,7 +208,7 @@
 \subsection{Scaling Analysis}
 \begin{frame}{\textbf{Scaling Analysis}}
 \begin{center}
-\includegraphics[height=\textheight]{Scaling}
+\includegraphics[height=0.8\textheight]{Scaling}
 \end{center}
 \end{frame}
 
