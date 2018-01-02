@@ -107,7 +107,7 @@
 
 \begin{frame}{\textbf{Sample Spectrum}}
 \begin{center}
-\includegraphics[height=\textheight]{example_spectrum}
+\includegraphics[height=0.8\textheight]{example_spectrum}
 \end{center}
 \end{frame}
 
@@ -121,7 +121,7 @@
 
 \begin{frame}{\textbf{Pathways}}
 \begin{center}
-\includegraphics[height=\textheight]{WMELs}
+\includegraphics[height=0.8\textheight]{WMELs}
 \end{center}
 \end{frame}
 
@@ -129,6 +129,8 @@
 \begin{columns}
 \column{0.8\textwidth}
 \includegraphics[width=\textwidth]{Matrix_Flow_Diagram}
+Density elements, encoded with quantum state (subscript) and the electric fields which have ingeracted (superscript). Colored arrows represent the different electric fields.
+These form the state vector (right).
 \column{0.2\textwidth}
 \begin{math}
 \overline{\rho} \equiv
@@ -169,6 +171,9 @@
 	0 & 0 & 0 & 0 & -A_2 & B_{2^\prime} & B_1 & 0 & -\Gamma_{21}
 \end{bmatrix}
 \end{math}
+Defines the transition between states, dependant on the electric field.
+$\Gamma$ represents the dephasing/population decay.
+$A$ and $B$ variables incorporate the dipole moment, and electric field terms.
 \end{frame}
 
 
@@ -188,14 +193,10 @@
 
 \begin{frame}{\textbf{Profile trace of \texttt{NISE}}}
 \includegraphics[width=\textwidth]{NISE_prof}
-	Here is some text
-    %TODO include image
 \end{frame}
 
 \begin{frame}{\textbf{Profile trace of \texttt{WrightSim}}}
 \includegraphics[width=\textwidth]{WrightSim_prof}
-	Here is some text
-    %TODO include image
 \end{frame}
 
 \section{\textbf{Parallel Implementations}}
