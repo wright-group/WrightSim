@@ -102,7 +102,14 @@
 \section{Goals}
 
 \begin{frame}{\textbf{Goals}}
-%TODO bulleted list of goals
+\begin{itemize}
+\item Reproduce expermental spectra \textit{in silico}.
+\item Designed with experimetalists in mind.
+\item Uses numerical integration for flexability, accuracy and interpretability.
+\item Focus on Frequency-domain spectroscopy, but techniques in principle extend to time-domain.
+\item Output retains frequency and phase information, can be combined with other simulations and measured similar to a monochromator.
+\item Selectivity in what portions of the overall signal are simulated, providing deeper understanding.
+\end{itemize}
 \end{frame}
 
 \begin{frame}{\textbf{Sample Spectrum}}
@@ -115,13 +122,23 @@
 \section{Theory}
 
 \begin{frame}{\textbf{Introduction}}
-	Here is some text
-%TODO: Text intro
+
+Presented here is a description of \textit{what} is done to perform these simulations, to understand \textit{why} it works, please refer to Kohler, Thompson, and Wright\cite{Kohler_2017}.
+
+The simulation uses a set number of electric fields (3, in the case of the simulation presented here).
+
+These electric fields interact in combinitorically large different fashions.
+
+Interactions create superposition coherences and/or populations in material systems.
+
 \end{frame}
 
 \begin{frame}{\textbf{Pathways}}
 \begin{center}
 \includegraphics[height=0.8\textheight]{WMELs}
+There are six time orderings for interactions to occur (I-VI).
+There are 16 independant pathways possible for two positive (solid up/dashed down) and one negative (dashed up/solid down) interactions.
+Originally from \cite{Kohler_2017}.
 \end{center}
 \end{frame}
 
@@ -130,7 +147,8 @@
 \column{0.8\textwidth}
 \includegraphics[width=\textwidth]{Matrix_Flow_Diagram}
 Density elements, encoded with quantum state (subscript) and the electric fields which have ingeracted (superscript). Colored arrows represent the different electric fields.
-These form the state vector (right).
+All possible states which have the desired conditions for the process simulated are included.
+These form the state vector (right).\cite{Kohler_2017}
 \column{0.2\textwidth}
 \begin{math}
 \overline{\rho} \equiv
@@ -149,14 +167,19 @@ These form the state vector (right).
 \end{columns}
 \end{frame}
 
-\begin{frame}{\textbf{Hamiltonian Matrix}}
-%\begin{math}
+%\begin{frame}{\textbf{Hamiltonian Variables}}
+%\begin{eqnarray}
 %A_1 &\equiv& \frag{i} {2} \mu_{10}e^{-i\omega_1\tau_1)c_1(t-\tau_1)e^{i(\omega_1-\omega_{10})t} \\
 %A_2 &\equiv& \frag{i} {2} \mu_{10}e^{-i\omega_2\tau_2)c_2(t-\tau_2)e^{i(\omega_2-\omega_{10})t} \\
 %A_{2^\prime} &\equiv& \frag{i} {2} \mu_{10}e^{-i\omega_{2^\prime}\tau_{2^\prime})c_{2^\prime}(t-\tau_{2^\prime})e^{i(\omega_{2^\prime}-\omega_{10})t} \\
 %B_1 &\equiv& \frag{i} {2} \mu_{21}e^{-i\omega_1\tau_1)c_1(t-\tau_1)e^{i(\omega_1-\omega_{21})t} \\
 %B_2 &\equiv& \frag{i} {2} \mu_{21}e^{-i\omega_2\tau_2)c_2(t-\tau_2)e^{i(\omega_2-\omega_{21})t} \\
-%B_{2^\prime} &\equiv& \frag{i} {2} \mu_{21}e^{-i\omega_{2^\prime}\tau_{2^\prime})c_1(t-\tau_{2^\prime})e^{i(\omega_{2^\prime}-\omega_{21})t} \\
+%B_{2^\prime} &\equiv& \frag{i} {2} \mu_{21}e^{-i\omega_{2^\prime}\tau_{2^\prime})c_1(t-\tau_{2^\prime})e^{i(\omega_{2^\prime}-\omega_{21})t}
+%\end{eqnarray}
+
+%\end{frame}
+
+\begin{frame}{\textbf{Hamiltonian Matrix}}
 \begin{math}
 \overline{\overline{Q}} \equiv
 \begin{bmatrix}
@@ -171,17 +194,24 @@ These form the state vector (right).
 	0 & 0 & 0 & 0 & -A_2 & B_{2^\prime} & B_1 & 0 & -\Gamma_{21}
 \end{bmatrix}
 \end{math}
+
 Defines the transition between states, dependant on the electric field.
 $\Gamma$ represents the dephasing/population decay.
-$A$ and $B$ variables incorporate the dipole moment, and electric field terms.
+$A$ and $B$ variables incorporate the dipole moment and electric field terms.\cite{Kohler_2017}
+
+The dot product of this matrix and the density vector, $\overline{\rho}$, gives the change in in the density vector.
+This is repeated over many small time periods to achieve the recorded results.
 \end{frame}
 
 
 \section{\texttt{NISE}}
 
 \begin{frame}{\texttt{NISE}}
-	Here is some text
-    %TODO text on NISE
+\texttt{NISE} (Numerical Integration of the Schr{\"o}dinger Equation) is an existing open-source implementation of the simulation for these kinds of spectra.\cite{nise}
+It was written by Kohler and Thompson while preparing their manuscript.\cite{Kohler_2017}
+\texttt{NISE} uses a slight variation on the algorithm presented, which allows for a 7-element state vector, but requires two simulations.
+The end result is the same.
+\texttt{NISE} is included as a reference for prior implementations.
 \end{frame}
 
 \section{\textbf{Algorithmic Improvements}}
