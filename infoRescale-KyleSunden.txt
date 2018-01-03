@@ -1,0 +1,5 @@
+Final Project Author: Kyle Sunden
+URL to Final Project GitHub repo: https://github.com/wright-group/WrightSim
+Link to Report & Presentation: https://github.com/wright-group/WrightSim/report/report.pdf
+                               https://github.com/wright-group/WrightSim/slides/presentation.pdf
+I'm ok with having all the Final Project information (report/presentation/code) in the open domain: yes, Code is Open Source and MIT licensed.

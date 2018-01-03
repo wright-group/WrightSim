@@ -170,7 +170,7 @@ B_2 &\equiv& \frac{i}{2}\mu_{21}e^{i\omega_2\tau_2}c_2(t-\tau_2)e^{-i(\omega_2-\
 B_{2^\prime} &\equiv& \frac{i}{2}\mu_{21}e^{-i\omega_{2^\prime}\tau_{2^\prime}}c_{2^\prime}(t-\tau_{2^\prime})e^{i(\omega_{2^\prime}-\omega_{21})t}
 \end{eqnarray}
 
-These variables each consist of a constant factor of $\frac{i}{2}$, a magnetic susceptibility term ($\mu_{10|21}$), an electric field phase and amplitude (the first exponential term), an envelope function ($c$, a Gaussian function here), and a final exponential term.
+These variables each consist of a constant factor of $\frac{i}{2}$, a dipole moment term ($\mu_{10|21}$), an electric field phase and amplitude (the first exponential term), an envelope function ($c$, a Gaussian function here), and a final exponential term.
 These variables can then be used to populate the matrix:
 
 \begin{equation}
@@ -190,6 +190,7 @@ These variables can then be used to populate the matrix:
 \end{equation}
 
 The $\Gamma$ values along the diagonal represent dephasing, that is, loss of coherence, which happens without any interaction.
+The $\Gamma$ for populations is the population decay rate.
 To isolate a given time ordering, we can simply set the value of elements which do not correspond to that time ordering to zero.
 
 At each time step, the dot product of the matrix with the $\overline{\rho}$ vector is the change in the $\overline{\rho}$ vector to the next time step (when multiplied by the differential).
@@ -343,7 +344,7 @@ Ultimately, a GUI front end may be desirable, especially as the target audience 
 Additional Hamiltonians would make the package significantly more valuable as well.
 To add more Hamiltonians will require ensuring the code is robust, that values are transferred as expected.
 A few small assumptions were made in the interest of efficiency in the original implementation.
-Certain values represented by the Hamiltonian were hard-coded on the device code
+Certain values represented by the Hamiltonian were hard-coded on the device code.
 Those changes should be reversed.
 
 \subsection{Further Algorithmic Improvements}
