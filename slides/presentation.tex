@@ -134,12 +134,14 @@ Interactions create superposition coherences and/or populations in material syst
 \end{frame}
 
 \begin{frame}{\textbf{Pathways}}
-\begin{center}
+\begin{columns}
+\column{0.5\textwidth}
 \includegraphics[height=0.8\textheight]{WMELs}
+\column{0.5\textwidth}
 There are six time orderings for interactions to occur (I-VI).
 There are 16 independant pathways possible for two positive (solid up/dashed down) and one negative (dashed up/solid down) interactions.
 Originally from \cite{Kohler_2017}.
-\end{center}
+\end{columns}
 \end{frame}
 
 \begin{frame}{\textbf{Finite state automaton}}
@@ -208,9 +210,14 @@ This is repeated over many small time periods to achieve the recorded results.
 
 \begin{frame}{\texttt{NISE}}
 \texttt{NISE} (Numerical Integration of the Schr{\"o}dinger Equation) is an existing open-source implementation of the simulation for these kinds of spectra.\cite{nise}
+
 It was written by Kohler and Thompson while preparing their manuscript.\cite{Kohler_2017}
+
 \texttt{NISE} uses a slight variation on the algorithm presented, which allows for a 7-element state vector, but requires two simulations.
+
 The end result is the same.
+
+
 \texttt{NISE} is included as a reference for prior implementations.
 \end{frame}
 
