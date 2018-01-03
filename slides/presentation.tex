@@ -360,31 +360,55 @@ One important thing to do is to take a step back and think about how users inter
 \subsection{Algorithmic Improvements}
 \begin{frame}{\textbf{Algorithmic Improvements}}
 \begin{itemize}
-\item TODO
+\item Use single precision values for improved speed of execution, transfer, and memory usage.
+\item Improved parsing of electric field parameters - Currently transfers large, redundant array.
+\item Explore dynamic ways of sending data back to the CPU as processing is ongoing.
+    \begin{itemize}
+    \item Values are not needed once recorded, but currently held until the end to transfer back.
+    \end{itemize}
+\item Conserve memory using bit field instead of array of char for boolean options.
+\item Utilize shared cache where possible.
+\item Zero Hamiltonian only once, all non-zero values are overwritten anyway.
+\item Utilize sparsity of the Hamiltonian matrices:
+    \begin{itemize}
+    \item Many are triangular, could use a multiplication that cuts out the half that is all zero.
+    \item some may benefit by being represented as sparse matrices, storing only the nonzero values.
+    \end{itemize}
+\item Capitalize on symmetries of the system to only compute sections that can be reflected or rotated a single time.
+    \begin{itemize}
+    \item These symmetries are non-trivial to discover, but cut down drastically the amount of computation that needs to be done.
+    \item the benefit increases with higher dimensional scans, provided symmetry is not broken.
+    \end{itemize}
+
 \end{itemize}
 \end{frame}
 
 \section{\textbf{Conclusions}}
 \begin{frame}{\textbf{Conclusions}}
 \begin{itemize}
-\item TODO
+\item \texttt{WrightSim} is a large step towards a fast, easy to use simulation suite for quantum mechanical nonlinear spectroscopy.
+\item Algorithmic improvements alone offered an order of magnitude improvement over the previous simulation suite.
+\item CPU and GPU parallelization offer even further improved performance, taking advantage of a highly parallelizable algorithm.
+\item The CUDA implementation offers about 2.5 orders of magnitude improved performance over the pre-existing serial implementation.
+\item Improvements are still in the pipeline, both in terms of performance and functionality.
+\item The project is young, but off to a fantastic start.
 \end{itemize}
 \end{frame}
 
 \subsection{Acknowledgements}
+\begin{frame}{\textbf{Acknowledgements}}
 
-%\section{\textbf{References}}
+I would like to thank Blaise Thompson and Dan Kohler for their assistance in getting this project started.
+They provided a lot of help in understanding both the theory from their paper and the code they wrote in \texttt{NISE}.
+They ported many of the ancillary bits of \texttt{NISE} to help get something functional which could then be improved.
+They provided test cases and interpretation, helping to track down bugs and brainstorm ideas.
 
-%\begin{frame}{\textbf{References}}
-%\bibliographystyle{achemso}
+This project is truly the vision of Blaise Thompson, it would not be extant without him.
+
+\end{frame}
+
+
 \printbibliography
-%\end{frame}
-
-
-
-
-
-
 
 
 \end{document}
