@@ -1,18 +1,26 @@
 import numpy as np
 
 def runge_kutta(t, efields, n_recorded, hamiltonian):
-    """
-    Evolves the hamiltonian in time, given the three 1d array of E-field points 
-    for each E-field and the hamiltonian
+    """ Evolves the hamiltonian in time using the runge_kutta method.
 
-    H[pulse_permutations, t, ij_to, ij_from] is a rank 4 array of the hamiltonian 2D 
-    matrix for each time point and necessary pulse permutations
+    Parameters
+    ----------
+    t : 1-D array of float
+        Time points, equally spaced array.
+        Shape T, number of timepoints
+    efields : ndarray <Complex>
+        Time dependant electric fields for all pulses.
+        SHape M x T where M is number of electric fields, T is number of time points.
+    n_recorded : int
+        Number of timesteps to record at the end of the simulation.
+    hamiltonian : Hamiltonian
+        The hamiltonian object which contains the inital conditions and the 
+            function to use to obtain the matrices.
 
-    Uses Runge-Kutta method to integrate 
-        --> assumes eqaully spaced t-points (t_int is spacing)
-
-    Unlike earlier implementations, delays, phase, etc., must be incorporated
-    externally to the function.  Rotating wave may still be specified.
+    Returns
+    -------
+    ndarray : <Complex>
+        2-D array of recorded density vector elements for each time step in n_recorded.
     """
     # can only call on n_recorded and t after efield_object.E is called
     dt = np.abs(t[1]-t[0])
@@ -25,11 +33,10 @@ def runge_kutta(t, efields, n_recorded, hamiltonian):
     emitted_index = 0
     rho_i = hamiltonian.rho.copy()
     for k in range(len(t)-1):
-        # now sum over p equivalent pulse permutations (e.g. TRIVE near-
-        # diagonal has 2 permutations)
         # calculate delta rho based on previous rho values
         temp_delta_rho = np.dot(H[k], rho_i)
         temp_rho_i = rho_i + temp_delta_rho*dt
+        # second order term
         delta_rho = np.dot(H[k+1], temp_rho_i)
         rho_i += dt/2 * (temp_delta_rho + delta_rho)
         # if we are close enough to final coherence emission, start 
@@ -44,11 +51,20 @@ def runge_kutta(t, efields, n_recorded, hamiltonian):
     for rec,native in enumerate(hamiltonian.recorded_indices):
         rho_emitted[rec, emitted_index] = rho_i[native]
 
-   # rho_emitted[s,t], s is out_group index, t is time index
     return rho_emitted
 
 muladd_cuda_source = """
-__device__ void muladd(pycuda::complex<double>* a, double b, pycuda::complex<double>* c, double d, int len, pycuda::complex<double>* out)
+/*
+ * muladd: Linear combination of two vectors with two scalar multiples
+ * 
+ * computes a*b + c*d where a and c are vectors, b and d are scalars
+ * Values are stored in out.
+ * If out is the same as a or c, this is an in place operation.
+ * len defines the length to perform the computation.
+ * Generalizes to n-D array, given it is stored in contiguous memory.
+ */
+__device__ void muladd(pycuda::complex<double>* a, double b, pycuda::complex<double>* c, double d,
+                       int len, pycuda::complex<double>* out)
 {
     for (int i=0; i<len; i++)
     {
@@ -58,7 +74,15 @@ __device__ void muladd(pycuda::complex<double>* a, double b, pycuda::complex<dou
 """
 
 dot_cuda_source = """
-__device__ void dot(pycuda::complex<double>* mat, pycuda::complex<double>* vec, int len, pycuda::complex<double>* out)
+/*
+ * dot: Matrix multiplied by a vector.
+ *
+ * Expects a square NxN matrix and an N-length column vector.
+ * Values are written to out. DO NOT use in place, invalid results will be returned.
+ *
+ */
+__device__ void dot(pycuda::complex<double>* mat, pycuda::complex<double>* vec, int len,
+                    pycuda::complex<double>* out)
 {
     for(int i=0; i<len; i++)
     {
@@ -75,79 +99,136 @@ __device__ void dot(pycuda::complex<double>* mat, pycuda::complex<double>* vec, 
 pulse_cuda_source = """
 #include <math.h>
 
-__device__ void calc_efield_params(double* params, double mu_0, int n)
+/*
+ * calc_efield_params: convert efield params into appropriate values
+ * 
+ * Converts FWHM to standard deviation
+ * Converts frequency into the rotating frame
+ * Converts area of peak to height
+ *
+ * Performs calculaiton on N contiguous sets of paramters, operation in place.
+ *
+ */
+__device__ void calc_efield_params(double* params, int n)
 {
     for(int i=0; i < n; i++)
     {
-        //sigma
+        // FWHM to sigma
         params[1 + i*5] /= (2. * sqrt(log(2.)));
-        //mu
-        //params[2 + i*5] -= mu_0;
-        //freq
+        // Frequency to rotating frame
         params[3 + i*5] *= 2 * M_PI * 3e-5;
-        //area -> y
+        // area -> y
         params[0 + i*5] /= params[1 + i*5] * sqrt(2 * M_PI);
     }
 }
 
-__device__ void calc_efield(double* params, int* phase_matching,  double t, int n, pycuda::complex<double>* out)
+/*
+ * calc_efield: Convert parameters, phase matching, and time into an electric field
+ *
+ * Converts n electric fields at a time, places the complex electric
+ *      field value into out, in contiguous fashion.
+ * The length of the phase_matiching array must be at least n.
+ *
+ */
+__device__ void calc_efield(double* params, int* phase_matching,  double t, int n,
+                            pycuda::complex<double>* out)
 {
+    //TODO: ensure phase matching is done correctly for cases where
+    //      it is not equal to +/- 1 (or 0, though why would you have 0)
+    //      NISE took the sign, so far I have only taken the value
     for(int i=0; i < n; i++)
     {
-        out[i] = pycuda::exp(-1. * I * ((double)(phase_matching[i]) * (params[3 + i*5] * (t - params[2 + i*5]) + params[4 + i*5])));
-        out[i] *= params[0 + i*5] * exp(-1 * (t-params[2 + i*5])*(t-params[2 + i*5])/2./params[1 + i*5]/params[1 + i*5]);
+        // Complex phase and magnitude
+        out[i] = pycuda::exp(-1. * I * ((double)(phase_matching[i]) *
+                                        (params[3 + i*5] * (t - params[2 + i*5]) + params[4 + i*5])));
+        // Gaussian envelope
+        out[i] *= params[0 + i*5] * exp(-1 * (t-params[2 + i*5]) * (t-params[2 + i*5])
+                                        / 2. / params[1 + i*5] / params[1 + i*5]);
     }
 }
 """
 
 
 runge_kutta_cuda_source = """
-__device__ pycuda::complex<double>* runge_kutta(const double time_start, const double time_end, const double dt, 
-                                               const int nEFields, double* efparams, double mu_0, int* phase_matching,
-                                               const int n_recorded, Hamiltonian ham,
-                                               pycuda::complex<double> *out)
+/*
+ * runge_kutta: Propagate electric fields over time using Runge-Kutta integration
+ * 
+ * Parameters
+ * ----------
+ * time_start: inital simulation time
+ * time_end: final simulation time
+ * dt: time step
+ * nEFields: number of electric fields
+ * *efparams: pointer to array of parameters for those electric fields
+ * *phase_matiching: array of phase matching conditions
+ * n_recorded: number of output values to record
+ * ham: Hamiltonian struct containing inital values, passed to matrix generator.
+ * 
+ * Output:
+ * *out: array of recorded values. expects enough memory for n_recorded * ham.nRecorded
+ *          complex values
+ */
+__device__
+pycuda::complex<double>* runge_kutta(const double time_start, const double time_end, const double dt, 
+                                     const int nEFields, double* efparams, int* phase_matching,
+                                     const int n_recorded, Hamiltonian ham,
+                                     pycuda::complex<double> *out)
 {
+    // Allocate arrays and pointers for the Hamiltonians for the current and next step.
     //pycuda::complex<double> *H_cur = (pycuda::complex<double>*)malloc(ham.nStates * ham.nStates * sizeof(pycuda::complex<double>));
-   // pycuda::complex<double> *H_next = (pycuda::complex<double>*)malloc(ham.nStates * ham.nStates * sizeof(pycuda::complex<double>));
+    //pycuda::complex<double> *H_next = (pycuda::complex<double>*)malloc(ham.nStates * ham.nStates * sizeof(pycuda::complex<double>));
+    //TODO: either figure out why dynamically allocated arrays weren't working, or use a #define to statically allocate
     pycuda::complex<double> buf1[81];
     pycuda::complex<double> buf2[81];
 
     pycuda::complex<double>* H_cur = buf1;
     pycuda::complex<double>* H_next = buf2;
 
+    // Track indices in arrays.
     int out_index = 0;
     int index=0;
     
+    // determine number of points.
     int npoints = (int)((time_end-time_start)/dt);
 
+    // Allocate vectors used in computation.
     pycuda::complex<double>* rho_i = (pycuda::complex<double>*)malloc(ham.nStates * sizeof(pycuda::complex<double>));
     pycuda::complex<double>* temp_delta_rho = (pycuda::complex<double>*)malloc(ham.nStates * sizeof(pycuda::complex<double>)); 
     pycuda::complex<double>* temp_rho_i = (pycuda::complex<double>*)malloc(ham.nStates * sizeof(pycuda::complex<double>)); 
     pycuda::complex<double>* delta_rho = (pycuda::complex<double>*)malloc(ham.nStates * sizeof(pycuda::complex<double>)); 
     pycuda::complex<double>* efields = (pycuda::complex<double>*)malloc(nEFields * sizeof(pycuda::complex<double>)); 
 
+    // Inital rho vector.
+    //TODO: Use the inital condition from the hamiltonian
     rho_i[0] = 1.;
     for(int i=1; i<ham.nStates; i++) rho_i[i] = 0.;
 
-    calc_efield_params(efparams, mu_0, nEFields);
+    // Convert from given units to simulation units.
+    calc_efield_params(efparams, nEFields);
 
+    // Compute the first set of electric fields.
     calc_efield(efparams, phase_matching, time_start, nEFields, efields);
 
-
+    // Compute the inital matrix, stored in H_next, to be swapped
     Hamiltonian_matrix(ham, efields, time_start, H_next);
     for(double t = time_start; t < time_end; t += dt)
     {   
+        // Swap pointers to current and next hamiltonians
         pycuda::complex<double>* temp = H_cur;
         H_cur = H_next;
         H_next = temp;
+        
+        // First order
         calc_efield(efparams, phase_matching, t+dt, nEFields, efields);
         Hamiltonian_matrix(ham, efields, t+dt, H_next);
         dot(H_cur, rho_i, ham.nStates, temp_delta_rho);
         muladd(rho_i, 1., temp_delta_rho, dt, ham.nStates, temp_rho_i);
+        // Second order
         dot(H_next, temp_rho_i, ham.nStates, delta_rho);
         muladd(temp_delta_rho, 1., delta_rho, 1., ham.nStates, delta_rho);
         muladd(rho_i, 1., delta_rho, dt/2., ham.nStates, rho_i);
 
+        // Record results if close enough to the end
         if(index > npoints - n_recorded)
         {
             for(int i=0; i < ham.nRecorded; i++)
@@ -159,6 +240,7 @@ __device__ pycuda::complex<double>* runge_kutta(const double time_start, const d
         index++;
     }
     
+    // Last point, only first order, recorded
     dot(H_cur, rho_i, ham.nStates, temp_delta_rho);
     muladd(rho_i, 1., temp_delta_rho, dt, ham.nStates, rho_i);
     for(int i=0; i < ham.nRecorded; i++)
@@ -171,6 +253,7 @@ __device__ pycuda::complex<double>* runge_kutta(const double time_start, const d
     free(temp_rho_i);
     free(delta_rho);
     free(efields);
+
     return out;
 }
 """
