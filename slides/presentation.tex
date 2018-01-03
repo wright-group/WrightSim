@@ -139,7 +139,9 @@ Interactions create superposition coherences and/or populations in material syst
 \includegraphics[height=0.8\textheight]{WMELs}
 \column{0.5\textwidth}
 There are six time orderings for interactions to occur (I-VI).
+
 There are 16 independant pathways possible for two positive (solid up/dashed down) and one negative (dashed up/solid down) interactions.
+
 Originally from \cite{Kohler_2017}.
 \end{columns}
 \end{frame}
@@ -224,23 +226,63 @@ The end result is the same.
 \section{\textbf{Algorithmic Improvements}}
 
 \begin{frame}{\textbf{Algorithmic Improvements}}
-	Here is some text
-    %TODO text on improvements
+\begin{itemize}
+
+\item Use single 9 x 9 matrix rather than two 7 x 7 matrices.
+\item $99.5\%$ of time is spent in highly parallelizable loop.
+\item $1/3$ of time is spent in a single function, \texttt{ix\_}.
+    \begin{itemize}
+    \item Removed entirely, in favor of a simpler communication of what to record.
+    \end{itemize}
+\item Significant time in \texttt{rotor} function which computes $cos(\theta) + i*sin(\theta)$.
+    \begin{itemize}
+    \item Replaced with $exp(i*\theta)$, equivalent, more efficient, removed fuction call.
+    \end{itemize}
+\item Use variables to store and resuse redundant computations.
+\end{itemize}
+
+Resulted in almost an order of magnitude speed-up from algorithmic improvements alone.
+Remained highly parallelizable
 \end{frame}
 
 \begin{frame}{\textbf{Profile trace of \texttt{NISE}}}
 \includegraphics[width=\textwidth]{NISE_prof}
+
+Python \texttt{cProfile} trace, Single Core implementation, visualized with SnakeViz.\cite{snakeviz}
 \end{frame}
 
 \begin{frame}{\textbf{Profile trace of \texttt{WrightSim}}}
 \includegraphics[width=\textwidth]{WrightSim_prof}
+
+Python \texttt{cProfile} trace, Single Core implementation, visualized with SnakeViz.\cite{snakeviz}
 \end{frame}
 
 \section{\textbf{Parallel Implementations}}
 
 \begin{frame}{\textbf{Parallel Implementations}}
-	Here is some text
-    %TODO text
+\begin{itemize}
+\item \texttt{NISE} already had CPU multiprocessed parallelism, using Python standard library interfaces.
+    \begin{itemize}
+    \item \texttt{WrightSim} inherited this CPU parallel implementation
+    \item Results in a 4x speed-up on a 4-core machine, almost no reduction due to Amdahl's law.
+    \end{itemize}
+
+\item A new Nvidia CUDA \cite{Nickolls_2008} implementation.
+    \begin{itemize}
+    \item Uses \texttt{PyCUDA} to call the kernel from within Python.
+    \item Just-in-time compiled (using nvcc) from C source code stored in Python strings.
+    \item Implementation differs slightly from pure Python implementation.
+        \begin{itemize}
+        \item Only actively used Hamiltonians are held in memory, Python implementation computes all timesteps ahead of time.
+        \item Similarly, only the actively used electric fields are held in memory.
+        \item Hand written dot product and vector adition, rather than the numpy implementations.
+        \end{itemize}
+
+    \end{itemize}
+
+
+\end{itemize}
+
 \end{frame}
 
 \subsection{Scaling Analysis}
@@ -253,8 +295,25 @@ The end result is the same.
 \subsection{Limitations}
 
 \begin{frame}{\textbf{Limitations}}
-	Here is some text
-    %TODO text
+\begin{itemize}
+\item For low number of points, the CUDA implementation is of limited use.
+    \begin{itemize}
+    \item Around 200 ms required for compilation.
+    \item 4-Core multiprocessed becomes faster below approximately 256 points.
+    \item CUDA implementation currently uses a hard coded block size of 256.
+    \item Only multiples of 256 may be used at present to avoid illegal memory access.
+    \end{itemize}
+
+
+\item Independant CUDA simulations are memory limited.
+    \begin{itemize}
+    \item only a certain amount of memory can be allocated for a single CUDA process.
+    \item Each point in the simulation requires 500 complex numbers (represented as doubles) to be allocated
+    \item Additional data is needed, but dominated by this array.
+    \item This array must be transferred back to the host.
+    \item The limit is between $2^{18}$ and $2^{19}$ points
+    \end{itemize}
+\end{itemize}
 \end{frame}
 
 
