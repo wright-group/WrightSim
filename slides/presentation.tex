@@ -103,9 +103,9 @@
 
 \begin{frame}{\textbf{Goals}}
 \begin{itemize}
-\item Reproduce expermental spectra \textit{in silico}.
-\item Designed with experimetalists in mind.
-\item Uses numerical integration for flexability, accuracy and interpretability.
+\item Reproduce experimental spectra \textit{in silico}.
+\item Designed with experimentalists in mind.
+\item Uses numerical integration for flexibility, accuracy and interpretability.
 \item Focus on Frequency-domain spectroscopy, but techniques in principle extend to time-domain.
 \item Output retains frequency and phase information, can be combined with other simulations and measured similar to a monochromator.
 \item Selectivity in what portions of the overall signal are simulated, providing deeper understanding.
@@ -127,7 +127,7 @@ Presented here is a description of \textit{what} is done to perform these simula
 
 The simulation uses a set number of electric fields (3, in the case of the simulation presented here).
 
-These electric fields interact in combinitorically large different fashions.
+These electric fields interact in combinatorially large different fashions.
 
 Interactions create superposition coherences and/or populations in material systems.
 
@@ -140,7 +140,7 @@ Interactions create superposition coherences and/or populations in material syst
 \column{0.5\textwidth}
 There are six time orderings for interactions to occur (I-VI).
 
-There are 16 independant pathways possible for two positive (solid up/dashed down) and one negative (dashed up/solid down) interactions.
+There are 16 independent pathways possible for two positive (solid up/dashed down) and one negative (dashed up/solid down) interactions.
 
 Originally from \cite{Kohler_2017}.
 \end{columns}
@@ -150,7 +150,7 @@ Originally from \cite{Kohler_2017}.
 \begin{columns}
 \column{0.8\textwidth}
 \includegraphics[width=\textwidth]{Matrix_Flow_Diagram}
-Density elements, encoded with quantum state (subscript) and the electric fields which have ingeracted (superscript). Colored arrows represent the different electric fields.
+Density elements, encoded with quantum state (subscript) and the electric fields which have interacted (superscript). Colored arrows represent the different electric fields.
 All possible states which have the desired conditions for the process simulated are included.
 These form the state vector (right).\cite{Kohler_2017}
 \column{0.2\textwidth}
@@ -236,9 +236,9 @@ The end result is the same.
     \end{itemize}
 \item Significant time in \texttt{rotor} function which computes $cos(\theta) + i*sin(\theta)$.
     \begin{itemize}
-    \item Replaced with $exp(i*\theta)$, equivalent, more efficient, removed fuction call.
+    \item Replaced with $exp(i*\theta)$, equivalent, more efficient, removed function call.
     \end{itemize}
-\item Use variables to store and resuse redundant computations.
+\item Use variables to store and reuse redundant computations.
 \end{itemize}
 
 Resulted in almost an order of magnitude speed-up from algorithmic improvements alone.
@@ -273,9 +273,9 @@ Python \texttt{cProfile} trace, Single Core implementation, visualized with Snak
     \item Just-in-time compiled (using nvcc) from C source code stored in Python strings.
     \item Implementation differs slightly from pure Python implementation.
         \begin{itemize}
-        \item Only actively used Hamiltonians are held in memory, Python implementation computes all timesteps ahead of time.
+        \item Only actively used Hamiltonians are held in memory, Python implementation computes all time steps ahead of time.
         \item Similarly, only the actively used electric fields are held in memory.
-        \item Hand written dot product and vector adition, rather than the numpy implementations.
+        \item Hand written dot product and vector addition, rather than the numpy implementations.
         \end{itemize}
 
     \end{itemize}
@@ -305,7 +305,7 @@ Python \texttt{cProfile} trace, Single Core implementation, visualized with Snak
     \end{itemize}
 
 
-\item Independant CUDA simulations are memory limited.
+\item Independent CUDA simulations are memory limited.
     \begin{itemize}
     \item only a certain amount of memory can be allocated for a single CUDA process.
     \item Each point in the simulation requires 500 complex numbers (represented as doubles) to be allocated
@@ -322,14 +322,38 @@ Python \texttt{cProfile} trace, Single Core implementation, visualized with Snak
 \subsection{Features}
 \begin{frame}{\textbf{Features}}
 \begin{itemize}
-\item TODO
+\item Nonidealities like chirped pulses.
+\item Inhomogeneous samples
+    \begin{itemize}
+    \item Results in broader peaks.
+    \item Can be modelled by translating a single computed response and adding.
+    \end{itemize}
+\item Measuring signal using Fourier transforms similar to how a monochromator selects a signal.
+\item Saving intermediate response values (Using HDF5 based file format)
+\item Saving compiled CUDA binary for more than one run at a time
+\end{itemize}
+\end{frame}
+\begin{frame}{\textbf{Metaprogramming Features}}
+Metaprogramming techniques are those which modify the code that is run as the program executes.
+
+Just-in-time compilation enables many opportunities for metaprogramming.
+\begin{itemize}
+\item Using same-named functions to change the exact algorithms, while other calling functions do not need to be edited.
+\item Resolving shortcuts taken for statically allocated arrays.
+\item Potentially, entire C functions could be dynamically generated by inspecting the Python code, resulting in new Hamiltonians only being required to be implemented once, in Python.
 \end{itemize}
 \end{frame}
 
 \subsection{Usability}
 \begin{frame}{\textbf{Usability}}
+One important thing to do is to take a step back and think about how users interact with the program.
 \begin{itemize}
-\item TODO
+\item Ensure the API is sensible, easy to follow, and well documented.
+\item Provide ways of configuring via configuration files instead of code.
+\item Think about implementing a GUI interface, targeted to experimentalists.
+\item Implement new Hamiltonians.
+\item Ensure code is robust, with proper values being transferred to and from the CUDA Device with different Hamiltonian instances.
+\item Resolve hard-coded initial values.
 \end{itemize}
 \end{frame}
 
@@ -349,12 +373,12 @@ Python \texttt{cProfile} trace, Single Core implementation, visualized with Snak
 
 \subsection{Acknowledgements}
 
-\section{\textbf{References}}
+%\section{\textbf{References}}
 
-\begin{frame}{\textbf{References}}
+%\begin{frame}{\textbf{References}}
 %\bibliographystyle{achemso}
 \printbibliography
-\end{frame}
+%\end{frame}
 
 
 
