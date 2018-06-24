@@ -1,35 +1,21 @@
 """Define WrightSim version."""
 
+import pathlib
 
-# --- import --------------------------------------------------------------------------------------
+__here__ = pathlib.Path(__file__).parent
 
-
-import os
-
-
-# ---- define -------------------------------------------------------------------------------------
-
-
-here = os.path.abspath(os.path.dirname(__file__))
-
-
-__all__ = ['__version__', '__branch__']
-
-
-# --- version -------------------------------------------------------------------------------------
-
+__all__ = ["__version__", "__branch__"]
 
 # read from VERSION file
-with open(os.path.join(os.path.dirname(here), 'VERSION')) as f:
-    __version__ = f.read().strip()
-
+with __here__ / "VERSION" as f:
+    __version__ = f.read_text().strip()
 
 # add git branch, if appropriate
-p = os.path.join(os.path.dirname(here), '.git', 'HEAD')
-if os.path.isfile(p):
-    with open(p) as f:
-        __branch__ = f.readline().rstrip().split(r'/')[-1]
-    if __branch__ != 'master':
-        __version__ += '-' + __branch__
+p = __here__.parent / ".git" / "HEAD"
+if p.is_file():
+    with p.open() as f:
+        __branch__ = f.readline().rstrip().split(r"/")[-1]
+    if __branch__ != "master":
+        __version__ += "-" + __branch__
 else:
     __branch__ = None
