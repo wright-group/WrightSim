@@ -10,7 +10,7 @@ addons:
             - libhdf5-dev
             - libopenblas-dev
 install:
-  - pip install -eU .
+  - pip install -e .
   - pip install -U pytest
 before_script:
   - "export DISPLAY=:99.0"
