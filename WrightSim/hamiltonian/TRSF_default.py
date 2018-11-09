@@ -7,18 +7,18 @@ class Hamiltonian:
     
     def __init__(self, rho=None, tau=None, mu=None,
                  omega=None, 
-                 labels = ['gg',
-                           'Ig_1', 'Ig_2', 'ig_1', 'ig_2',
-                           '2I,g', '2i,g', 'c,g',
-                           'ag', 'bg'
+                 labels = ['g',
+                           'I_1', 'I_2', 'i_1', 'i_2',
+                           '2I', '2i', 'c',
+                           'a', 'b'
                            ],
                  #time_orderings = list(range(1,4)),
                  phase_cycle = False,
                  propagator = None,
-                 recorded_indices = [8,9]):
+                 recorded_indices = [8, 9]):
 
         if rho is None:
-            self.rho = np.zeros(len(labels), dtype=np.complex64)
+            self.rho = np.zeros(len(labels), dtype=np.complex128)
             self.rho[0] = 1.
         else:
             self.rho = rho
@@ -27,7 +27,7 @@ class Hamiltonian:
             self.tau = np.array([np.inf, 
                                  1e3, 1e3, 1e3, 1e3,
                                  5e2, 5e2, 5e2,
-                                 10, 10])
+                                 5e1, 5e1])
         else:
             self.tau = tau
 
