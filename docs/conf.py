@@ -26,6 +26,7 @@ copyright = "2018, WrightSim Developers"
 author = "WrightSim Developers"
 
 # The short X.Y version
+here = os.path.dirname(__file__)
 with open(os.path.join(os.path.dirname(here), "WrightSim", "VERSION")) as version_file:
     version = version_file.read().strip()
 # The full version, including alpha/beta/rc tags
