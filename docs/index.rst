@@ -10,6 +10,9 @@ Welcome to WrightSim's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+   multiprocessing
+   propagate
+   api/modules
 
 
 Indices and tables
