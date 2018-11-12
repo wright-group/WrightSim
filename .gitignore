@@ -91,3 +91,6 @@ ENV/
 
 # Google Drive
 *desktop.ini
+
+# vim swap files
+*.sw?
