@@ -113,7 +113,7 @@ class GaussRWA:
             cc = np.ones((eparams.shape[-1]))
         else:
             cc = np.sign(pm)
-        x = np.exp(-1j*(cc[:,None]*(freq[:,None]*(t[None,:] - mu[:,None])+p[:,None])))
+        x = np.exp(-1j*cc[:,None] * (freq[:,None] * (t[None,:] - mu[:,None]) + p[:,None]))
         x*= y[:,None] * np.exp(-(t[None,:] - mu[:,None])**2 / (2*sigma[:,None]**2) )
         return t, x
 

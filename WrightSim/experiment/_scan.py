@@ -165,7 +165,7 @@ class Scan:
     def get_color(self):
         """Get an array of driven signal frequency for each array point."""
         # in wavenumbers
-        w_axis = self.cols['w']
+        w_axis = [i for i in range(len(self.cols)) if self.cols[i] == 'w'][0]
         wtemp = self.efp[..., w_axis].copy()
         wtemp *= self.pm
         wm = wtemp.sum(axis=-1)
