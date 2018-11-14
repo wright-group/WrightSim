@@ -157,9 +157,14 @@ class Scan:
             del results
         else:
             #with wt.kit.Timer():
-                for idx in np.ndindex(self.shape):
-                    t, efields = self.pulse_class.pulse(self.efp[idx], pm=self.pm)
-                    self.sig[idx] = self.ham.propagator(t, efields, self.iprime, self.ham)
+            d_axis = [i for i in range(len(self.cols)) if self.cols[i] == 'd']
+            delays = self.efp[..., d_axis]
+            self.pulse_class.fixed_bounds_min = delays.min() - self.early_buffer
+            self.pulse_class.fixed_bounds_max = delays.max() + self.late_buffer
+            self.pulse_class.fixed_bounds = True
+            for idx in np.ndindex(self.shape):
+                t, efields = self.pulse_class.pulse(self.efp[idx], pm=self.pm)
+                self.sig[idx] = self.ham.propagator(t, efields, self.iprime, self.ham)
         return self.sig
 
     def get_color(self):
@@ -210,7 +215,11 @@ class Scan:
                 with wt.kit.Timer():
                     for ind in np.ndindex(tuple(efields_shape[:-2])):
                         ti, efi = self.pulse_class.pulse(efp[ind], pm=self.pm)
+                        # transfer out of rotating frame
                         efields[ind] = efi
+                        for rec,native in enumerate(self.ham.recorded_indices):
+                            w_RWA = ham.omega[native]
+                            efields[ind, rec] *= np.exp(1j * w_RWA * ti)
             finally:
                 # set the class back to what it was before exiting
                 self.pulse_class.fixed_bounds = False
