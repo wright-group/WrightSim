@@ -44,13 +44,13 @@ def runge_kutta(t, efields, n_recorded, hamiltonian):
         # storing these values
         if k >= len(t) - n_recorded:
             for rec,native in enumerate(hamiltonian.recorded_indices):
-                rho_emitted[rec, emitted_index] = rho_i[native] * np.exp(1j * ws[rec] * t[k])
+                rho_emitted[rec, emitted_index] = rho_i[native] * np.exp(-1j * ws[rec] * t[k])
             emitted_index += 1
     # Last timestep
     temp_delta_rho = np.dot(H[-1], rho_i)
     rho_i += temp_delta_rho*dt
     for rec,native in enumerate(hamiltonian.recorded_indices):
-        rho_emitted[rec, emitted_index] = rho_i[native] * np.exp(1j * ws[rec] * t[-1])
+        rho_emitted[rec, emitted_index] = rho_i[native] * np.exp(-1j * ws[rec] * t[-1])
 
     return rho_emitted
 

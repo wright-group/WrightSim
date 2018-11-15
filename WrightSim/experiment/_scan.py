@@ -90,7 +90,7 @@ class Scan:
     }
     """
 
-    def run(self, mp='cpu', chunk=False):
+    def run(self, mp='cpu', chunk=False, window="full"):
         """Run the scan.
 
         Parameters
@@ -107,10 +107,17 @@ class Scan:
         """
         shape = list(self.array.shape)
         shape.append(len(self.ham.recorded_indices))
-        shape.append(self.iprime)
         self.pulse_class.timestep = self.timestep
         self.pulse_class.early_buffer = self.early_buffer
         self.pulse_class.late_buffer = self.late_buffer
+        if window=="full":
+            self.pulse_class.fixed_bounds = True
+            d_axis = [i for i in range(len(self.cols)) if self.cols[i] == 'd']
+            delays = self.efp[..., d_axis]
+            self.pulse_class.fixed_bounds_min = delays.min() - self.early_buffer
+            self.pulse_class.fixed_bounds_max = delays.max() + self.late_buffer
+            self.iprime = self.pulse_class.get_t().size
+        shape.append(self.iprime)
         self.pulse_class.pm = self.pm
         self.sig = np.empty(shape, dtype=np.complex128)
         if mp == 'gpu':
@@ -157,11 +164,6 @@ class Scan:
             del results
         else:
             #with wt.kit.Timer():
-            d_axis = [i for i in range(len(self.cols)) if self.cols[i] == 'd']
-            delays = self.efp[..., d_axis]
-            self.pulse_class.fixed_bounds_min = delays.min() - self.early_buffer
-            self.pulse_class.fixed_bounds_max = delays.max() + self.late_buffer
-            self.pulse_class.fixed_bounds = True
             for idx in np.ndindex(self.shape):
                 t, efields = self.pulse_class.pulse(self.efp[idx], pm=self.pm)
                 self.sig[idx] = self.ham.propagator(t, efields, self.iprime, self.ham)
