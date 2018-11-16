@@ -222,6 +222,17 @@ class Scan:
         else:
             # figure out the biggest array size we will get
             # now that we know t vals, we can set fixed bounds
+            self.pulse_class.early_buffer = self.early_buffer
+            self.pulse_class.late_buffer = self.late_buffer
+            self.pulse_class.timestep = self.timestep
+
+            d_ind = [i for i in range(len(self.cols)) if self.cols[i] == 'd']
+            t_max = self.efp[..., d_ind].max()
+            t_min = self.efp[..., d_ind].min()
+            self.pulse_class.fixed_bounds_min = t_min - self.early_buffer
+            self.pulse_class.fixed_bounds_max = t_max + self.late_buffer
+            self.pulse_class.fixed_bounds = True
+
             efields_shape[-1] = self.pulse_class.get_t().size
             efields = np.zeros((efields_shape), dtype=np.complex)
             with wt.kit.Timer():
