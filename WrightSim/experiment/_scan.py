@@ -19,9 +19,8 @@ def do_work(arglist):
     t = np.arange(*t_args)
     out = evolve_func(t, efields, iprime, H)
     #if indices[-1] == 0:
-    #   print(indices, pulse_class.timestep, str(iprime) + '              \r',)
+    #   print(indices, '              \r',)
     return indices, out
-
 
 
 # --- class ---------------------------------------------------------------------------------------
