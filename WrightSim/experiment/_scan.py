@@ -153,7 +153,7 @@ class Scan:
         elif mp:
             from multiprocessing import Pool, cpu_count
             arglist = [[ind, self.iprime, self.t_args, self.ham,
-                        self.pulse_class, self.efp[ind], self.pm, self.timestep,
+                        self.pulse_class, self.efp[ind], self.pm,
                         self.ham.propagator]
                         for ind in np.ndindex(self.array.shape)]
             pool = Pool(processes=cpu_count())
