@@ -31,7 +31,7 @@ def do_work(arglist):
 
 class Scan:
 
-    def __init__(self, experiment, hamiltonian):
+    def __init__(self, experiment, hamiltonian, windowed=True):
         self.exp = experiment
         self.ham = hamiltonian
         # unpack experiment
@@ -43,9 +43,9 @@ class Scan:
         self.early_buffer = self.exp.early_buffer
         self.late_buffer = self.exp.late_buffer
         self.timestep = self.exp.timestep
+        self.windowed = windowed
         # initialize
         self.coords_set = []
-        self.iprime = np.arange(-self.early_buffer, self.late_buffer, self.timestep).size
         self.shape = tuple(a.points.size for a in self.exp.active_axes)
         self.array = np.zeros(self.shape)
         self.efp = self._gen_efp()
@@ -90,7 +90,7 @@ class Scan:
     }
     """
 
-    def run(self, mp='cpu', chunk=False, window="full"):
+    def run(self, mp='cpu', chunk=False):
         """Run the scan.
 
         Parameters
@@ -108,15 +108,26 @@ class Scan:
         shape = list(self.array.shape)
         shape.append(len(self.ham.recorded_indices))
         self.pulse_class.timestep = self.timestep
-        self.pulse_class.early_buffer = self.early_buffer
-        self.pulse_class.late_buffer = self.late_buffer
-        if window=="full":
-            self.pulse_class.fixed_bounds = True
-            d_axis = [i for i in range(len(self.cols)) if self.cols[i] == 'd']
-            delays = self.efp[..., d_axis]
-            self.pulse_class.fixed_bounds_min = delays.min() - self.early_buffer
-            self.pulse_class.fixed_bounds_max = delays.max() + self.late_buffer
-            self.iprime = self.pulse_class.get_t().size
+
+        d_ind = [i for i in range(len(self.cols)) if self.cols[i] == 'd']
+        t_max = self.efp[..., d_ind].max()
+        t_min = self.efp[..., d_ind].min()
+        # simulate over fixed time interval
+        self.pulse_class.fixed_bounds_min = t_min - self.early_buffer 
+        self.pulse_class.fixed_bounds_max = t_max + self.late_buffer
+        self.pulse_class.fixed_bounds = True
+
+        if self.windowed:   # assume emission always close to end of time bound
+            self.pulse_class.early_buffer = self.early_buffer
+            self.pulse_class.late_buffer = self.late_buffer
+            self.iprime = np.arange(-self.early_buffer, 
+                                    self.late_buffer, 
+                                    self.timestep).size
+            self.t = self.pulse_class.get_t()[-self.iprime:]
+        else:   # record all time points simulated
+            self.t = self.pulse_class.get_t()
+            self.iprime = self.t.size
+
         shape.append(self.iprime)
         self.pulse_class.pm = self.pm
         self.sig = np.empty(shape, dtype=np.complex128)
@@ -178,7 +189,7 @@ class Scan:
         wm = wtemp.sum(axis=-1)
         return wm
 
-    def efields(self, windowed=True):
+    def efields(self, windowed=None):
         """Return the e-fields used in the simulation.
 
         Parameters
@@ -192,12 +203,17 @@ class Scan:
         numpy ndarray
             Array in (axes..., pulse, time).
         """
+        if windowed is None:
+            windowed = self.windowed
+        print("windowed", windowed)
         # [axes..., numpulses, nparams]
         efp = self.efp
         # [axes..., numpulses, pulse field values]
         efields_shape = list(efp.shape)
         if windowed:
-            efields_shape[-1] = self.iprime
+            efields_shape[-1] = np.arange(
+                -self.early_buffer, self.late_buffer, self.timestep
+            ).size
             efields = np.zeros((efields_shape), dtype=np.complex)
             with wt.kit.Timer():
                 for ind in np.ndindex(tuple(efields_shape[:-2])):
@@ -205,24 +221,12 @@ class Scan:
                     efields[ind] = efi[:, -self.iprime:]
         else:
             # figure out the biggest array size we will get
-            d_ind = self.pulse_class.cols['d']
-            t = self.pulse_class.get_t(efp[..., d_ind])
             # now that we know t vals, we can set fixed bounds
-            self.pulse_class.fixed_bounds_min = t.min()
-            self.pulse_class.fixed_bounds_max = t.max()
-            self.pulse_class.fixed_bounds = True
-            efields_shape[-1] = t.size
+            efields_shape[-1] = self.pulse_class.get_t().size
             efields = np.zeros((efields_shape), dtype=np.complex)
-            try:
-                with wt.kit.Timer():
-                    for ind in np.ndindex(tuple(efields_shape[:-2])):
-                        ti, efi = self.pulse_class.pulse(efp[ind], pm=self.pm)
-                        # transfer out of rotating frame
-                        efields[ind] = efi
-                        for rec,native in enumerate(self.ham.recorded_indices):
-                            w_RWA = ham.omega[native]
-                            efields[ind, rec] *= np.exp(1j * w_RWA * ti)
-            finally:
-                # set the class back to what it was before exiting
-                self.pulse_class.fixed_bounds = False
+            with wt.kit.Timer():
+                for ind in np.ndindex(tuple(efields_shape[:-2])):
+                    ti, efi = self.pulse_class.pulse(efp[ind], pm=self.pm)
+                    # transfer out of rotating frame
+                    efields[ind] = efi
         return efields
