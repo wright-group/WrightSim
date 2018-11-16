@@ -24,21 +24,6 @@ late_buffer  = 400.0
 # --- functions -----------------------------------------------------------------------------------
 
 
-def _get_t(obj, d):
-    """
-        returns the t array that is appropriate for the given pulse
-        parameters; needs the appropriate buffers/timestep as well
-    """
-    if obj.fixed_bounds:
-        t_min = obj.fixed_bounds_min
-        t_max = obj.fixed_bounds_max
-    else:
-        t_min = d.min() - obj.early_buffer
-        t_max = d.max() + obj.late_buffer
-    # span up to and including t_max now
-    t = np.arange(t_min, t_max + obj.timestep, obj.timestep)
-    # alternate form:
-    return t
 
 
 # --- class ---------------------------------------------------------------------------------------
@@ -63,17 +48,9 @@ class GaussRWA:
             'd',  # pulse center delay (fs),
             'w',  # frequency (wn),
             'p']  # phase shift (radians)
-    # initial vars come from misc module, just as with scan module
-    timestep = timestep
-    early_buffer = early_buffer
-    late_buffer = late_buffer
-    # fixed bounds set to true if you want fixed time indices for the pulses
-    fixed_bounds = False
-    fixed_bounds_min = None
-    fixed_bounds_max = None
 
     @classmethod
-    def pulse(cls, eparams, pm=None):
+    def pulse(cls, eparams, t_args, pm=None):
         """Get efields for each pulse.
 
         Parameters
@@ -107,7 +84,8 @@ class GaussRWA:
         y = area / (sigma * np.sqrt(2 * np.pi))
         #print y, sigma, mu, freq, p
         # calculate t
-        t = cls.get_t(mu)
+        # t = cls.get_t(mu)
+        t = np.arange(*t_args)
         # incorporate complex conjugates if necessary
         if pm is None:
             cc = np.ones((eparams.shape[-1]))
@@ -115,8 +93,4 @@ class GaussRWA:
             cc = np.sign(pm)
         x = np.exp(-1j * cc[:, None] * (freq[:, None] * (t[None, :] - mu[:, None]) + p[:, None]))
         x*= y[:,None] * np.exp(-(t[None,:] - mu[:,None])**2 / (2*sigma[:,None]**2) )
-        return t, x
-
-    @classmethod
-    def get_t(cls, d=None):
-        return _get_t(cls, d)
+        return x

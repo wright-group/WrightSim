@@ -13,17 +13,15 @@ from ..mixed import propagate
 
 
 def do_work(arglist):
-    indices, iprime, H, pulse_class = arglist[:4]
-    efpi, pm, timestep, eb, lb, evolve_func = arglist[4:]
-    # need to declare these for each function
-    pulse_class.early_buffer = eb
-    pulse_class.late_buffer = lb
-    pulse_class.timestep = timestep
-    t, efields = pulse_class.pulse(efpi, pm=pm)
+    indices, iprime, t_args, H = arglist[:4]
+    pulse_class, efpi, pm, evolve_func = arglist[4:]
+    efields = pulse_class.pulse(efpi, t_args, pm=pm)
+    t = np.arange(*t_args)
     out = evolve_func(t, efields, iprime, H)
     #if indices[-1] == 0:
     #   print(indices, pulse_class.timestep, str(iprime) + '              \r',)
     return indices, out
+
 
 
 # --- class ---------------------------------------------------------------------------------------
@@ -109,24 +107,20 @@ class Scan:
         shape.append(len(self.ham.recorded_indices))
         self.pulse_class.timestep = self.timestep
 
+        # simulate over fixed time interval
         d_ind = [i for i in range(len(self.cols)) if self.cols[i] == 'd']
         t_max = self.efp[..., d_ind].max()
         t_min = self.efp[..., d_ind].min()
-        # simulate over fixed time interval
-        self.pulse_class.fixed_bounds_min = t_min - self.early_buffer 
-        self.pulse_class.fixed_bounds_max = t_max + self.late_buffer
-        self.pulse_class.fixed_bounds = True
+        self.t_args = (t_min - self.early_buffer, t_max + self.late_buffer, self.timestep)
+        self.t = np.arange(*self.t_args)
 
         if self.windowed:   # assume emission always close to end of time bound
-            self.pulse_class.early_buffer = self.early_buffer
-            self.pulse_class.late_buffer = self.late_buffer
             self.iprime = np.arange(-self.early_buffer, 
                                     self.late_buffer, 
                                     self.timestep).size
-            self.t = self.pulse_class.get_t()[-self.iprime:]
-        else:   # record all time points simulated
-            self.t = self.pulse_class.get_t()
+        else:
             self.iprime = self.t.size
+
 
         shape.append(self.iprime)
         self.pulse_class.pm = self.pm
@@ -158,9 +152,9 @@ class Scan:
             cuda.memcpy_dtoh(self.sig, sigPtr)
         elif mp:
             from multiprocessing import Pool, cpu_count
-            arglist = [[ind, self.iprime, self.ham,
+            arglist = [[ind, self.iprime, self.t_args, self.ham,
                         self.pulse_class, self.efp[ind], self.pm, self.timestep,
-                        self.early_buffer, self.late_buffer, self.ham.propagator]
+                        self.ham.propagator]
                         for ind in np.ndindex(self.array.shape)]
             pool = Pool(processes=cpu_count())
             chunksize = int(self.array.size / cpu_count())
@@ -176,8 +170,10 @@ class Scan:
         else:
             #with wt.kit.Timer():
             for idx in np.ndindex(self.shape):
-                t, efields = self.pulse_class.pulse(self.efp[idx], pm=self.pm)
-                self.sig[idx] = self.ham.propagator(t, efields, self.iprime, self.ham)
+                efields = self.pulse_class.pulse(self.efp[idx], self.t_args, pm=self.pm)
+                self.sig[idx] = self.ham.propagator(
+                    np.arange(*self.t_args), efields, self.iprime, self.ham
+                )
         return self.sig
 
     def get_color(self):
@@ -196,7 +192,7 @@ class Scan:
         ----------
            windowed : boolean (optional)
                If True, only returns values that are within the early and
-               late buffer. Default is True.
+               late buffer. Defaults to self.windowed.
 
         Returns
         -------
@@ -210,34 +206,25 @@ class Scan:
         efp = self.efp
         # [axes..., numpulses, pulse field values]
         efields_shape = list(efp.shape)
-        if windowed:
-            efields_shape[-1] = np.arange(
-                -self.early_buffer, self.late_buffer, self.timestep
-            ).size
+        if windowed == self.windowed:
+            efields_shape[-1] = self.iprime
             efields = np.zeros((efields_shape), dtype=np.complex)
             with wt.kit.Timer():
                 for ind in np.ndindex(tuple(efields_shape[:-2])):
-                    ti, efi = self.pulse_class.pulse(efp[ind], pm=self.pm)
+                    efi = self.pulse_class.pulse(efp[ind], self.t_args, pm=self.pm)
                     efields[ind] = efi[:, -self.iprime:]
         else:
-            # figure out the biggest array size we will get
-            # now that we know t vals, we can set fixed bounds
-            self.pulse_class.early_buffer = self.early_buffer
-            self.pulse_class.late_buffer = self.late_buffer
-            self.pulse_class.timestep = self.timestep
+            if windowed:
+                efields_shape[-1] = np.arange(
+                    -self.early_buffer, self.late_buffer, self.timestep
+                ).size
+            else:
+                efields_shape[-1] = self.t.size
 
-            d_ind = [i for i in range(len(self.cols)) if self.cols[i] == 'd']
-            t_max = self.efp[..., d_ind].max()
-            t_min = self.efp[..., d_ind].min()
-            self.pulse_class.fixed_bounds_min = t_min - self.early_buffer
-            self.pulse_class.fixed_bounds_max = t_max + self.late_buffer
-            self.pulse_class.fixed_bounds = True
-
-            efields_shape[-1] = self.pulse_class.get_t().size
             efields = np.zeros((efields_shape), dtype=np.complex)
             with wt.kit.Timer():
                 for ind in np.ndindex(tuple(efields_shape[:-2])):
-                    ti, efi = self.pulse_class.pulse(efp[ind], pm=self.pm)
-                    # transfer out of rotating frame
-                    efields[ind] = efi
+                    efi = self.pulse_class.pulse(efp[ind], self.t_args, pm=self.pm)
+                    efields[ind] = efi[-efields_shape[-1]:]                
+
         return efields
