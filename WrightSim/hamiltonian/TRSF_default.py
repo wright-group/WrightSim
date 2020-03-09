@@ -123,10 +123,10 @@ class Hamiltonian:
         mu_ac  = self.mu['a_c']
         mu_bc  = self.mu['b_c']
         
-        out[:,1,0] = 0.5j * mu_Ig * E1 * np.exp(1j*wI*time)
-        out[:,2,0] = 0.5j * mu_Ig * E2 * np.exp(1j*wI*time)
-        out[:,3,0] = 0.5j * mu_ig * E1 * np.exp(1j*wi*time)
-        out[:,4,0] = 0.5j * mu_ig * E2 * np.exp(1j*wi*time)
+        out[:,1,0] = 0.5j * mu_Ig * E1 * np.exp(1j * wI * time)
+        out[:,2,0] = 0.5j * mu_Ig * E2 * np.exp(1j * wI * time)
+        out[:,3,0] = 0.5j * mu_ig * E1 * np.exp(1j * wi * time)
+        out[:,4,0] = 0.5j * mu_ig * E2 * np.exp(1j * wi * time)
         
         out[:,5,1] = 0.5j * mu_2II * E2 * np.exp(1j * wII_I * time)
         out[:,5,2] = 0.5j * mu_2II * E1 * np.exp(1j * wII_I * time)
