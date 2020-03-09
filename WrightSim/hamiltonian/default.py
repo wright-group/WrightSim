@@ -187,8 +187,9 @@ class Hamiltonian:
         outside of the matrix
         """
         # Define transition energies
-        wag  = energies[1]
-        w2aa = energies[-1]
+        wn_to_omega = 2*np.pi*3*10**-5
+        wag  = energies[1] * wn_to_omega
+        w2aa = energies[-1] * wn_to_omega
         
         # Define dipole moments
         mu_ag = self.mu[0]
