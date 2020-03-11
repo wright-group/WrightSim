@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def runge_kutta(t, efields, n_recorded, hamiltonian):
     """ Evolves the hamiltonian in time using the runge_kutta method.
 
@@ -23,7 +24,7 @@ def runge_kutta(t, efields, n_recorded, hamiltonian):
         2-D array of recorded density vector elements for each time step in n_recorded.
     """
     # can only call on n_recorded and t after efield_object.E is called
-    dt = np.abs(t[1]-t[0])
+    dt = np.abs(t[1] - t[0])
     # extract attributes of the system
     rho_emitted = np.empty((len(hamiltonian.recorded_indices), n_recorded), dtype=np.complex128)
 
@@ -32,26 +33,27 @@ def runge_kutta(t, efields, n_recorded, hamiltonian):
     # index to keep track of elements of rho_emitted
     emitted_index = 0
     rho_i = hamiltonian.rho.copy()
-    for k in range(len(t)-1):
+    for k in range(len(t) - 1):
         # calculate delta rho based on previous rho values
         temp_delta_rho = np.dot(H[k], rho_i)
-        temp_rho_i = rho_i + temp_delta_rho*dt
+        temp_rho_i = rho_i + temp_delta_rho * dt
         # second order term
-        delta_rho = np.dot(H[k+1], temp_rho_i)
-        rho_i += dt/2 * (temp_delta_rho + delta_rho)
-        # if we are close enough to final coherence emission, start 
+        delta_rho = np.dot(H[k + 1], temp_rho_i)
+        rho_i += dt / 2 * (temp_delta_rho + delta_rho)
+        # if we are close enough to final coherence emission, start
         # storing these values
         if k >= len(t) - n_recorded:
-            for rec,native in enumerate(hamiltonian.recorded_indices):
+            for rec, native in enumerate(hamiltonian.recorded_indices):
                 rho_emitted[rec, emitted_index] = rho_i[native]
             emitted_index += 1
     # Last timestep
     temp_delta_rho = np.dot(H[-1], rho_i)
-    rho_i += temp_delta_rho*dt
-    for rec,native in enumerate(hamiltonian.recorded_indices):
+    rho_i += temp_delta_rho * dt
+    for rec, native in enumerate(hamiltonian.recorded_indices):
         rho_emitted[rec, emitted_index] = rho_i[native]
 
     return rho_emitted
+
 
 muladd_cuda_source = """
 /*
@@ -139,7 +141,7 @@ __device__ void calc_efield(double* params, int* phase_matching,  double t, int 
     for(int i=0; i < n; i++)
     {
         // Complex phase and magnitude
-        out[i] = pycuda::exp(-1. * I * ((double)(phase_matching[i]) *
+        out[i] = pycuda::exp(1. * I * ((double)(phase_matching[i]) *
                                         (params[3 + i*5] * (t - params[2 + i*5]) + params[4 + i*5])));
         // Gaussian envelope
         out[i] *= params[0 + i*5] * exp(-1 * (t-params[2 + i*5]) * (t-params[2 + i*5])
