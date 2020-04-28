@@ -1,7 +1,8 @@
-
 import numpy as np
 
 from ..mixed import propagate
+
+wn_to_omega = 2 * np.pi * 3 * 10 ** -5
 
 
 class Hamiltonian:
@@ -23,14 +24,32 @@ class Hamiltonian:
         int* recorded_indices;
     };
     """
-    cuda_mem_size = 4*4 + np.intp(0).nbytes*6
+    cuda_mem_size = 4 * 4 + np.intp(0).nbytes * 6
 
-
-    def __init__(self, rho=None, tau=None, mu=None,
-                        omega=None, w_central=7000., coupling=0,
-                        propagator=None, phase_cycle=False,
-                        labels=['00','01 -2','10 2\'','10 1','20 1+2\'','11 1-2','11 2\'-2', '10 1-2+2\'', '21 1-2+2\''],
-                        time_orderings=list(range(1,7)), recorded_indices = [7, 8]):
+    def __init__(
+        self,
+        rho=None,
+        tau=None,
+        mu=None,
+        omega=None,
+        w_central=7000.0,
+        coupling=0,
+        propagator=None,
+        phase_cycle=False,
+        labels=[
+            "00",
+            "01 -2",
+            "10 2'",
+            "10 1",
+            "20 1+2'",
+            "11 1-2",
+            "11 2'-2",
+            "10 1-2+2'",
+            "21 1-2+2'",
+        ],
+        time_orderings=list(range(1, 7)),
+        recorded_indices=[7, 8],
+    ):
         """Create a Hamiltonian object.
 
         Parameters
@@ -80,32 +99,33 @@ class Hamiltonian:
         """
         if rho is None:
             self.rho = np.zeros(len(labels), dtype=np.complex128)
-            self.rho[0] = 1.
+            self.rho[0] = 1.0
         else:
             self.rho = np.array(rho, dtype=np.complex128)
 
         if tau is None:
-            tau = 50. #fs
+            tau = 50.0  # fs
         if np.isscalar(tau):
             self.tau = np.array([np.inf, tau, tau, tau, tau, np.inf, np.inf, tau, tau])
         else:
             self.tau = tau
 
-        #TODO: Think about dictionaries or some other way of labeling Mu values
+        # TODO: Think about dictionaries or some other way of labeling Mu values
         if mu is None:
-            self.mu = np.array([1., 1.], dtype=np.complex128)
+            self.mu = np.array([1.0, 1.0], dtype=np.complex128)
         else:
             self.mu = np.array(mu, dtype=np.complex128)
 
         if omega is None:
             w_ag = w_central
             w_2aa = w_ag - coupling
-            w_2ag = 2*w_ag - coupling
-            w_gg = 0.
+            w_2ag = 2 * w_ag - coupling
+            w_gg = 0.0
             w_aa = w_gg
             self.omega = np.array([w_gg, -w_ag, w_ag, w_ag, w_2ag, w_aa, w_aa, w_ag, w_2aa])
+            self.omega *= wn_to_omega
         else:
-            self.omega = w_0
+            self.omega = omega
 
         if propagator is None:
             self.propagator = propagate.runge_kutta
@@ -116,7 +136,11 @@ class Hamiltonian:
         self.recorded_indices = recorded_indices
 
         self.time_orderings = time_orderings
-        self.Gamma = 1./self.tau
+        self.Gamma = 1.0 / self.tau
+
+    @property
+    def omega_wn(self):
+        return self.omega / wn_to_omega
 
     def to_device(self, pointer):
         """Transfer the Hamiltonian to a C struct in CUDA device memory.
@@ -124,7 +148,8 @@ class Hamiltonian:
         Currently expects a pointer to an already allocated chunk of memory.
         """
         import pycuda.driver as cuda
-        #TODO: Reorganize to allocate here and return the pointer, this is more friendly
+
+        # TODO: Reorganize to allocate here and return the pointer, this is more friendly
         # Transfer the arrays which make up the hamiltonian
         rho = cuda.to_device(self.rho)
         mu = cuda.to_device(self.mu)
@@ -132,7 +157,7 @@ class Hamiltonian:
         Gamma = cuda.to_device(self.Gamma)
 
         # Convert time orderings into a C boolean array of 1 and 0, offset by one
-        tos = [1 if i in self.time_orderings else 0 for i in range(1,7)]
+        tos = [1 if i in self.time_orderings else 0 for i in range(1, 7)]
 
         # Transfer time orderings and recorded indices
         time_orderings = cuda.to_device(np.array(tos, dtype=np.int8))
@@ -141,7 +166,7 @@ class Hamiltonian:
         # Transfer metadata about the lengths of feilds
         cuda.memcpy_htod(pointer, np.array([len(self.rho)], dtype=np.int32))
         cuda.memcpy_htod(int(pointer) + 4, np.array([len(self.mu)], dtype=np.int32))
-        #TODO: generalize nTimeOrderings
+        # TODO: generalize nTimeOrderings
         cuda.memcpy_htod(int(pointer) + 8, np.array([6], dtype=np.int32))
         cuda.memcpy_htod(int(pointer) + 12, np.array([len(self.recorded_indices)], dtype=np.int32))
 
@@ -152,8 +177,6 @@ class Hamiltonian:
         cuda.memcpy_htod(int(pointer) + 40, np.intp(int(Gamma)))
         cuda.memcpy_htod(int(pointer) + 48, np.intp(int(time_orderings)))
         cuda.memcpy_htod(int(pointer) + 56, np.intp(int(recorded_indices)))
-
-        
 
     def matrix(self, efields, time):
         """Generate the time dependant Hamiltonian Coupling Matrix.
@@ -172,9 +195,9 @@ class Hamiltonian:
             Shape T x N x N array with the full Hamiltonian at each time step.
             N is the number of states in the Density vector.
         """
-        #TODO: Just put the body of this method in here, rather than calling _gen_matrix
-        E1,E2,E3 = efields[0:3]
-        return  self._gen_matrix(E1, E2, E3, time, self.omega)
+        # TODO: Just put the body of this method in here, rather than calling _gen_matrix
+        E1, E2, E3 = efields[0:3]
+        return self._gen_matrix(E1, E2, E3, time, self.omega)
 
     def _gen_matrix(self, E1, E2, E3, time, energies):
         """
@@ -187,13 +210,13 @@ class Hamiltonian:
         outside of the matrix
         """
         # Define transition energies
-        wag  = energies[1]
+        wag = energies[1]
         w2aa = energies[-1]
-        
+
         # Define dipole moments
         mu_ag = self.mu[0]
         mu_2aa = self.mu[-1]
-    
+
         # Define helpful variables
         A_1 = 0.5j * mu_ag * E1 * np.exp(-1j * wag * time)
         A_2 = 0.5j * mu_ag * E2 * np.exp(1j * wag * time)
@@ -207,38 +230,38 @@ class Hamiltonian:
 
         # Add appropriate array elements, according to the time orderings
         if 3 in self.time_orderings or 5 in self.time_orderings:
-            out[:,1,0] = -A_2
+            out[:, 1, 0] = -A_2
         if 4 in self.time_orderings or 6 in self.time_orderings:
-            out[:,2,0] = A_2prime
+            out[:, 2, 0] = A_2prime
         if 1 in self.time_orderings or 2 in self.time_orderings:
-            out[:,3,0] = A_1
+            out[:, 3, 0] = A_1
         if 3 in self.time_orderings:
-            out[:,5,1] = A_1
+            out[:, 5, 1] = A_1
         if 5 in self.time_orderings:
-            out[:,6,1] = A_2prime
+            out[:, 6, 1] = A_2prime
         if 4 in self.time_orderings:
-            out[:,4,2] = B_1
+            out[:, 4, 2] = B_1
         if 6 in self.time_orderings:
-            out[:,6,2] = -A_2
+            out[:, 6, 2] = -A_2
         if 2 in self.time_orderings:
-            out[:,4,3] = B_2prime
+            out[:, 4, 3] = B_2prime
         if 1 in self.time_orderings:
-            out[:,5,3] = -A_2
+            out[:, 5, 3] = -A_2
         if 2 in self.time_orderings or 4 in self.time_orderings:
-            out[:,7,4] = B_2
-            out[:,8,4] = -A_2
+            out[:, 7, 4] = B_2
+            out[:, 8, 4] = -A_2
         if 1 in self.time_orderings or 3 in self.time_orderings:
-            out[:,7,5] = -2 * A_2prime
-            out[:,8,5] = B_2prime
+            out[:, 7, 5] = -2 * A_2prime
+            out[:, 8, 5] = B_2prime
         if 5 in self.time_orderings or 6 in self.time_orderings:
-            out[:,7,6] = -2 * A_1
-            out[:,8,6] = B_1
+            out[:, 7, 6] = -2 * A_1
+            out[:, 8, 6] = B_1
 
         # Add Gamma along the diagonal
         for i in range(len(self.Gamma)):
-            out[:,i,i] = -1 * self.Gamma[i]
+            out[:, i, i] = -1 * self.Gamma[i]
 
-        #NOTE: NISE multiplied outputs by the approriate mu in here
+        # NOTE: NISE multiplied outputs by the approriate mu in here
         #      This mu factors out, remember to use it where needed later
         #      Removed for clarity and aligning with Equation S15 of Kohler2017
 
@@ -246,7 +269,7 @@ class Hamiltonian:
 
     cuda_matrix_source = """
     /**
-     *  Hamiltonian_matrix: Computes the Hamiltonian matrix for an indevidual time step.
+     *  Hamiltonian_matrix: Computes the Hamiltonian matrix for an individual time step.
      *  NOTE: This differs from the Python implementation, which computes the full time 
      *          dependant hamiltonian, this only computes for a single time step
      *          (to conserve memory).
@@ -330,5 +353,4 @@ class Hamiltonian:
         // Put Gamma along the diagonal
         for(int i=0; i<ham.nStates; i++) out[i*ham.nStates + i] = -1. * ham.Gamma[i];
     }
-"""    
-
+"""

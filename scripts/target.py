@@ -27,8 +27,8 @@ here = os.path.abspath(os.path.dirname(__file__))
 dt = 50.  # pulse duration (fs)
 slitwidth = 120.  # mono resolution (wn)
 
-nw = sys.argv[1]#16  # number of frequency points (w1 and w2)
-nt = sys.argv[2]#1376  # number of delay points (d2)
+nw = 256  # number of frequency points (w1 and w2)
+nt = 256  # number of delay points (d2)
 
 
 # --- workspace -----------------------------------------------------------------------------------
@@ -41,26 +41,25 @@ exp.w2.points = np.linspace(-2.5, 2.5, nw) * 4 * np.log(2) / dt * 1 / (2 * np.pi
 #exp.w2.points = 0.
 exp.d2.points = np.linspace(-2 * dt, 8 * dt, nt)
 exp.w1.active = exp.w2.active = exp.d2.active = True
-#exp.d2.points = 4 * dt
-#exp.d2.active = False
+exp.d2.points = 4 * dt
+exp.d2.active = False
 exp.timestep = 2.
 exp.early_buffer = 100.0
 exp.late_buffer  = 400.0
 
 # create hamiltonian
-ham = ws.hamiltonian.Hamiltonian(w_central=0.)
+ham = ws.hamiltonian.Hamiltonian(w_central=300.)
 #ham.time_orderings = [5]
 ham.recorded_elements = [7,8]
 
 # do scan
 begin = time.perf_counter()
-scan = exp.run(ham, mp='')
+scan = exp.run(ham, mp='cpu')
 print(time.perf_counter()-begin)
 gpuSig = scan.sig.copy()
 #with wt.kit.Timer():
 #    scan2 = exp.run(ham, mp=None)
 #cpuSig = scan2.sig.copy()
-'''
 plt.close('all')
 # measure and plot
 fig, gs = wt.artists.create_figure(cols=[1, 'cbar'])
@@ -78,4 +77,3 @@ cax = plt.subplot(gs[0, 1])
 wt.artists.plot_colorbar(label='ampiltude')
 # finish
 plt.show()
-'''
