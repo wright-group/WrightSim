@@ -34,13 +34,15 @@ def from_ini(p):
     axis_names.remove('main')
     axes = []
     for name in axis_names:
-        points = ini.read(name, 'points')
-        active = ini.read(name, 'active')
-        pulses = ini.read(name, 'pulses')
-        parameter = ini.read(name, 'parameter')
-        axis = Axis(points=points, units=None, name=name, active=active, pulses=pulses,
+        is_axis = ini.read(name, 'axis')
+        if is_axis: 
+            points = ini.read(name, 'points')
+            active = ini.read(name, 'active')
+            pulses = ini.read(name, 'pulses')
+            parameter = ini.read(name, 'parameter')
+            axis = Axis(points=points, units=None, name=name, active=active, pulses=pulses,
                     parameter=parameter, cols=pulse_class.cols)
-        axes.append(axis)
+            axes.append(axis)
     # construct experiment object
     name = ini.read('main', 'name')
     pm = ini.read('main', 'pm')
