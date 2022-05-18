@@ -14,8 +14,6 @@ setup(
     name="WrightSim",
     packages=find_packages(),
     package_data=extra_files,
-    setup_requires=["pytest-runner"],
-    tests_require=["pytest"],
     install_requires=["h5py>=2.7.0", "numpy", "scipy", "WrightTools"],
     extras_require={"docs": ["sphinx-gallery>=0.1.9"], "cuda": ["pycuda"]},
     version=version,
