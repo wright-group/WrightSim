@@ -79,3 +79,4 @@ for i in range(scan.npulses):
                     cmap=wt.artists.colormaps['signed'])
     plt.grid(b=True)
 
+plt.show()
