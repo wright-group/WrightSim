@@ -13,16 +13,13 @@ from ..mixed import propagate
 
 
 def do_work(arglist):
-    indices, iprime, H, pulse_class = arglist[:4]
-    efpi, pm, timestep, eb, lb, evolve_func = arglist[4:]
-    # need to declare these for each function
-    pulse_class.early_buffer = eb
-    pulse_class.late_buffer = lb
-    pulse_class.timestep = timestep
-    t, efields = pulse_class.pulse(efpi, pm=pm)
+    indices, iprime, t_args, H = arglist[:4]
+    pulse_class, efpi, pm, evolve_func = arglist[4:]
+    efields = pulse_class.pulse(efpi, t_args, pm=pm)
+    t = np.arange(*t_args)
     out = evolve_func(t, efields, iprime, H)
     #if indices[-1] == 0:
-    #   print(indices, pulse_class.timestep, str(iprime) + '              \r',)
+    #   print(indices, '              \r',)
     return indices, out
 
 
@@ -31,7 +28,7 @@ def do_work(arglist):
 
 class Scan:
 
-    def __init__(self, experiment, hamiltonian):
+    def __init__(self, experiment, hamiltonian, windowed=True):
         self.exp = experiment
         self.ham = hamiltonian
         # unpack experiment
@@ -43,9 +40,9 @@ class Scan:
         self.early_buffer = self.exp.early_buffer
         self.late_buffer = self.exp.late_buffer
         self.timestep = self.exp.timestep
+        self.windowed = windowed
         # initialize
         self.coords_set = []
-        self.iprime = np.arange(-self.early_buffer, self.late_buffer, self.timestep).size
         self.shape = tuple(a.points.size for a in self.exp.active_axes)
         self.array = np.zeros(self.shape)
         self.efp = self._gen_efp()
@@ -107,10 +104,24 @@ class Scan:
         """
         shape = list(self.array.shape)
         shape.append(len(self.ham.recorded_indices))
-        shape.append(self.iprime)
         self.pulse_class.timestep = self.timestep
-        self.pulse_class.early_buffer = self.early_buffer
-        self.pulse_class.late_buffer = self.late_buffer
+
+        # simulate over fixed time interval
+        d_ind = [i for i in range(len(self.cols)) if self.cols[i] == 'd']
+        t_max = self.efp[..., d_ind].max()
+        t_min = self.efp[..., d_ind].min()
+        self.t_args = (t_min - self.early_buffer, t_max + self.late_buffer, self.timestep)
+        self.t = np.arange(*self.t_args)
+
+        if self.windowed:   # assume emission always close to end of time bound
+            self.iprime = np.arange(-self.early_buffer, 
+                                    self.late_buffer, 
+                                    self.timestep).size
+        else:
+            self.iprime = self.t.size
+
+
+        shape.append(self.iprime)
         self.pulse_class.pm = self.pm
         self.sig = np.empty(shape, dtype=np.complex128)
         if mp == 'gpu':
@@ -140,9 +151,9 @@ class Scan:
             cuda.memcpy_dtoh(self.sig, sigPtr)
         elif mp:
             from multiprocessing import Pool, cpu_count
-            arglist = [[ind, self.iprime, self.ham,
-                        self.pulse_class, self.efp[ind], self.pm, self.timestep,
-                        self.early_buffer, self.late_buffer, self.ham.propagator]
+            arglist = [[ind, self.iprime, self.t_args, self.ham,
+                        self.pulse_class, self.efp[ind], self.pm,
+                        self.ham.propagator]
                         for ind in np.ndindex(self.array.shape)]
             pool = Pool(processes=cpu_count())
             chunksize = int(self.array.size / cpu_count())
@@ -157,61 +168,62 @@ class Scan:
             del results
         else:
             #with wt.kit.Timer():
-                for idx in np.ndindex(self.shape):
-                    t, efields = self.pulse_class.pulse(self.efp[idx], pm=self.pm)
-                    self.sig[idx] = self.ham.propagator(t, efields, self.iprime, self.ham)
+            for idx in np.ndindex(self.shape):
+                efields = self.pulse_class.pulse(self.efp[idx], self.t_args, pm=self.pm)
+                self.sig[idx] = self.ham.propagator(
+                    np.arange(*self.t_args), efields, self.iprime, self.ham
+                )
         return self.sig
 
     def get_color(self):
         """Get an array of driven signal frequency for each array point."""
         # in wavenumbers
-        w_axis = self.cols['w']
+        w_axis = [i for i in range(len(self.cols)) if self.cols[i] == 'w'][0]
         wtemp = self.efp[..., w_axis].copy()
         wtemp *= self.pm
         wm = wtemp.sum(axis=-1)
         return wm
 
-    def efields(self, windowed=True):
+    def efields(self, windowed=None):
         """Return the e-fields used in the simulation.
 
         Parameters
         ----------
            windowed : boolean (optional)
                If True, only returns values that are within the early and
-               late buffer. Default is True.
+               late buffer. Defaults to self.windowed.
 
         Returns
         -------
         numpy ndarray
             Array in (axes..., pulse, time).
         """
+        if windowed is None:
+            windowed = self.windowed
+        print("windowed", windowed)
         # [axes..., numpulses, nparams]
         efp = self.efp
         # [axes..., numpulses, pulse field values]
         efields_shape = list(efp.shape)
-        if windowed:
+        if windowed == self.windowed:
             efields_shape[-1] = self.iprime
             efields = np.zeros((efields_shape), dtype=np.complex)
             with wt.kit.Timer():
                 for ind in np.ndindex(tuple(efields_shape[:-2])):
-                    ti, efi = self.pulse_class.pulse(efp[ind], pm=self.pm)
+                    efi = self.pulse_class.pulse(efp[ind], self.t_args, pm=self.pm)
                     efields[ind] = efi[:, -self.iprime:]
         else:
-            # figure out the biggest array size we will get
-            d_ind = self.pulse_class.cols['d']
-            t = self.pulse_class.get_t(efp[..., d_ind])
-            # now that we know t vals, we can set fixed bounds
-            self.pulse_class.fixed_bounds_min = t.min()
-            self.pulse_class.fixed_bounds_max = t.max()
-            self.pulse_class.fixed_bounds = True
-            efields_shape[-1] = t.size
+            if windowed:
+                efields_shape[-1] = np.arange(
+                    -self.early_buffer, self.late_buffer, self.timestep
+                ).size
+            else:
+                efields_shape[-1] = self.t.size
+
             efields = np.zeros((efields_shape), dtype=np.complex)
-            try:
-                with wt.kit.Timer():
-                    for ind in np.ndindex(tuple(efields_shape[:-2])):
-                        ti, efi = self.pulse_class.pulse(efp[ind], pm=self.pm)
-                        efields[ind] = efi
-            finally:
-                # set the class back to what it was before exiting
-                self.pulse_class.fixed_bounds = False
+            with wt.kit.Timer():
+                for ind in np.ndindex(tuple(efields_shape[:-2])):
+                    efi = self.pulse_class.pulse(efp[ind], self.t_args, pm=self.pm)
+                    efields[ind] = efi[-efields_shape[-1]:]                
+
         return efields

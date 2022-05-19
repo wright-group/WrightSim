@@ -33,7 +33,8 @@ def runge_kutta(t, efields, n_recorded, hamiltonian):
     # index to keep track of elements of rho_emitted
     emitted_index = 0
     rho_i = hamiltonian.rho.copy()
-    for k in range(len(t) - 1):
+    ws = hamiltonian.omega[hamiltonian.recorded_indices]
+    for k in range(len(t)-1):
         # calculate delta rho based on previous rho values
         temp_delta_rho = np.dot(H[k], rho_i)
         temp_rho_i = rho_i + temp_delta_rho * dt
@@ -43,14 +44,14 @@ def runge_kutta(t, efields, n_recorded, hamiltonian):
         # if we are close enough to final coherence emission, start
         # storing these values
         if k >= len(t) - n_recorded:
-            for rec, native in enumerate(hamiltonian.recorded_indices):
-                rho_emitted[rec, emitted_index] = rho_i[native]
+            for rec,native in enumerate(hamiltonian.recorded_indices):
+                rho_emitted[rec, emitted_index] = rho_i[native] * np.exp(-1j * ws[rec] * t[k])
             emitted_index += 1
     # Last timestep
     temp_delta_rho = np.dot(H[-1], rho_i)
-    rho_i += temp_delta_rho * dt
-    for rec, native in enumerate(hamiltonian.recorded_indices):
-        rho_emitted[rec, emitted_index] = rho_i[native]
+    rho_i += temp_delta_rho*dt
+    for rec,native in enumerate(hamiltonian.recorded_indices):
+        rho_emitted[rec, emitted_index] = rho_i[native] * np.exp(-1j * ws[rec] * t[-1])
 
     return rho_emitted
 

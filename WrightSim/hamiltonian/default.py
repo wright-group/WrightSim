@@ -210,7 +210,7 @@ class Hamiltonian:
         outside of the matrix
         """
         # Define transition energies
-        wag = energies[1]
+        wag  = energies[2]
         w2aa = energies[-1]
 
         # Define dipole moments
@@ -218,12 +218,12 @@ class Hamiltonian:
         mu_2aa = self.mu[-1]
 
         # Define helpful variables
-        A_1 = 0.5j * mu_ag * E1 * np.exp(-1j * wag * time)
-        A_2 = 0.5j * mu_ag * E2 * np.exp(1j * wag * time)
-        A_2prime = 0.5j * mu_ag * E3 * np.exp(-1j * wag * time)
-        B_1 = 0.5j * mu_2aa * E1 * np.exp(-1j * w2aa * time)
-        B_2 = 0.5j * mu_2aa * E2 * np.exp(1j * w2aa * time)
-        B_2prime = 0.5j * mu_2aa * E3 * np.exp(-1j * w2aa * time)
+        A_1 = 0.5j * mu_ag * E1 * np.exp(1j * wag * time)
+        A_2 = 0.5j * mu_ag * E2 * np.exp(-1j * wag * time)
+        A_2prime = 0.5j * mu_ag * E3 * np.exp(1j * wag * time)
+        B_1 = 0.5j * mu_2aa * E1 * np.exp(1j * w2aa * time)
+        B_2 = 0.5j * mu_2aa * E2 * np.exp(-1j * w2aa * time)
+        B_2prime = 0.5j * mu_2aa * E3 * np.exp(1j * w2aa * time)
 
         # Initailze the full array of all hamiltonians to zero
         out = np.zeros((len(time), len(energies), len(energies)), dtype=np.complex128)

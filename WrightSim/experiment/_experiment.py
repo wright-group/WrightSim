@@ -55,7 +55,7 @@ class Experiment:
     def axis_names(self):
         return [a.name for a in self.axes]
 
-    def run(self, hamiltonian, mp=True):
+    def run(self, hamiltonian, mp=True, windowed=True):
         """Run the experiment.
 
         Parameters
@@ -64,12 +64,13 @@ class Experiment:
             Hamiltonian.
         mp : boolean (optional)
             Toggle CPU multiprocessing. Default is True.
-
+        windowed : boolean (optional)
+            Toggle truncating output bounds.  Default is True.
         Returns
         -------
         WrightSim Scan
             Scan that was run."""
-        out = Scan(self, hamiltonian)
+        out = Scan(self, hamiltonian, windowed=windowed)
         out.run(mp=mp)
         # finish
         return out
