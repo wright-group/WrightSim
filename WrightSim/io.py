@@ -1,6 +1,7 @@
 from WrightTools import _group as wt_group
-import WrightTools as wt
+
 from . import experiment as expt
+from experiment import _scan as scan
 import numpy as np
 import json
 import pickle
@@ -77,7 +78,7 @@ def save_run(filepath, wsrun):
 
 def load_run(filepath):
     '''
-    Loads an hdf5 file into a WrightSim run object.
+    Loads an hdf5 file into a WrightSim Scan object.
     
         Open any ws5 file, returning the top-level object (data or collection).
 
@@ -90,7 +91,7 @@ def load_run(filepath):
 
     Returns
     -------
-    WrightSim Run object
+    WrightSim Scan object
         Root-level object in file.
     '''
     filepath = os.fspath(filepath)
@@ -100,8 +101,8 @@ def load_run(filepath):
     class_name = f["/"].attrs["class"]
     name = f["/"].attrs["name"]
     f.close()
-    if class_name == "Run":
-        #obj = wt_data.Data(filepath=str(filepath), name=name, edit_local=True)
+    if class_name == "Scan":
+        obj = scan.Scan(filepath=str(filepath), name=name, edit_local=True)
         pass
     else:
         obj = wt_group.Group(filepath=str(filepath), name=name, edit_local=True)
