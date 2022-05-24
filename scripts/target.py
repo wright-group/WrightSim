@@ -63,7 +63,8 @@ print(time.perf_counter()-begin)
  #with wt.kit.Timer():
 #    scan2 = exp.run(ham, mp=None)
 # cpuSig = scan2.sig.copy()
-ws.io.save_exp("test.json", exp)
+ws.io.save_run("target.ws5", scan)
+scansig=ws.io.load_run("target.ws5")
 plt.close('all')
 # measure and plot
 fig, gs = wt.artists.create_figure(cols=[1, 'cbar'])

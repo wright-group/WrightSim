@@ -1,7 +1,8 @@
 from WrightTools import _group as wt_group
+import WrightTools as wt
 
-from . import experiment as expt
-from experiment import _scan as scan
+from . import experiment
+from  .experiment import _scan as Scan
 import numpy as np
 import json
 import pickle
@@ -9,8 +10,10 @@ import h5py
 import pathlib
 import os
 
-def to_wtdata(wsexp, wsrun):
+
+def to_wtdata(wsexp, wsscan):
     '''
+      
     to_wtdata(wsexp, wsrun)
     -----------
     Converts a WrightSim experiment and run into a properly formatted WrightTools data object.
@@ -18,7 +21,7 @@ def to_wtdata(wsexp, wsrun):
     Inputs
     -- 
     wsexp:  WrightSim experiment object.
-    wsrun:  WrightSim run object.
+    wsscan:  WrightSim Scan object.
 
 
     Output
@@ -26,19 +29,39 @@ def to_wtdata(wsexp, wsrun):
     data:  WrightTools data object.
 
     '''
-    return
+    dataobj=wt.data.Data()
+    strnglist=list()
+    for k in wsscan.active_axes:
+        dataobj.create_variable(
+            values=wsscan.active_axes[k].points,
+            name=str(wsscan.active_axes[k].name),
+            units=wsscan.active_axes[k].units,
+            dtype = wsscan.active_axes[k].points.type 
+            )
+        strnglist.append(str(wsscan.active_axes[k].name))
+    
+    stringcut=strnglist[1:-1]
+    dataobj.create_channel(name="sim", values=wsscan.sig[:], dtype=np.complex128)
+    dataobj.transform(stringcut)
+    return dataobj
 
 
 def save_exp(filename, wsexp):
     """Save a pickled WrightSim experiment."""
-    assert (isinstance(wsexp, expt.builtin('trive')))
-    return pickle.dump(wsexp, filename)
-    
+    assert (type(wsexp)==type(experiment.builtin("trive")))
+    pickleb=pickle.dumps(wsexp)
+    f=open(filename, "wb")
+    f.write(pickleb)
+    f.close()
+    return 
+
 
 def load_exp(filename):
     """Load the JSON representation into an Experiment object."""
-    exp= pickle.load(filename)
-    assert (isinstance(exp, expt.builtin('trive')))
+    f=open(filename, "rb")
+    exp= pickle.load(f)
+    f.close()
+    assert (type(exp)==type(experiment.builtin("trive")))
     return exp
 
 
@@ -60,25 +83,20 @@ def save_run(filepath, wsrun):
     filepath = filepath.with_suffix(".ws5")
     filepath = filepath.absolute().expanduser()
 
-    # copy to new file
-    h5py.File(filepath, "w")
-    new = wt_group(filepath=filepath, edit_local=True)
-    # attrs
-    for k, v in wsrun.items():
-        new.items[k] = v
-    # children
-    #for k, v in wsrun.items():
-    #    wt_group.copy(v, new, name=v.natural_name)
-    # finish
-    new.flush()
-    new.close()
-    del new
+  
+    f=h5py.File(filepath, "w")
+    dat=f.create_group("WrightSim")
+    dat.create_dataset("sig", data=wsrun.sig[:])
+
+    f.flush()
+    f.close()
+
     return 
 
 
 def load_run(filepath):
     '''
-    Loads an hdf5 file into a WrightSim Scan object.
+    Loads an hdf5 file into a Scan.sig array.
     
         Open any ws5 file, returning the top-level object (data or collection).
 
@@ -86,25 +104,19 @@ def load_run(filepath):
     ----------
     filepath : path-like
         Path to file.
-        Can be either a local or remote file (http/ftp).
-        Can be compressed with gz/bz2, decompression based on file name.
 
     Returns
     -------
-    WrightSim Scan object
-        Root-level object in file.
+    WrightSim Scan.sig array
+        
     '''
     filepath = os.fspath(filepath)
-    ds = np.DataSource(None)
 
     f = h5py.File(filepath, "r")
-    class_name = f["/"].attrs["class"]
-    name = f["/"].attrs["name"]
+    
+    
+    obj = np.array(f['WrightSim/sig'][:])
+    f.flush()
     f.close()
-    if class_name == "Scan":
-        obj = scan.Scan(filepath=str(filepath), name=name, edit_local=True)
-        pass
-    else:
-        obj = wt_group.Group(filepath=str(filepath), name=name, edit_local=True)
 
     return obj

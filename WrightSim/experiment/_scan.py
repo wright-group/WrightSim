@@ -27,7 +27,7 @@ def do_work(arglist):
 
 
 class Scan:
-
+    
     def __init__(self, experiment, hamiltonian, windowed=True):
         self.exp = experiment
         self.ham = hamiltonian
