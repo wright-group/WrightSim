@@ -63,15 +63,18 @@ print(time.perf_counter()-begin)
  #with wt.kit.Timer():
 #    scan2 = exp.run(ham, mp=None)
 # cpuSig = scan2.sig.copy()
-ws.io.save_run("target.ws5", scan)
-scansig=ws.io.load_run("target.ws5")
+#ws.io.save_run("target.ws5", scan)
+#scansig=ws.io.load_run("target.ws5")
 plt.close('all')
+data=ws.io.to_wtdata(exp,scan)
 # measure and plot
 fig, gs = wt.artists.create_figure(cols=[1, 'cbar'])
 ax = plt.subplot(gs[0, 0])
 xi = exp.active_axes[0].points
 yi = exp.active_axes[1].points
 zi = np.abs(scan.sig.sum(axis=-2)).sum(axis=-1).T
+z=data.channels[0][:]
+zn= np.abs(z.sum(axis=-2)).sum(axis=-1).T
 # zi /= zi.max()
 ax.pcolor(xi, yi, zi, cmap='default')
 ax.contour(xi, yi, zi, colors='k')
@@ -79,6 +82,18 @@ ax.contour(xi, yi, zi, colors='k')
 ax.set_xlabel(exp.active_axes[0].name)
 ax.set_ylabel(exp.active_axes[1].name)
 cax = plt.subplot(gs[0, 1])
+wt.artists.plot_colorbar(label='ampiltude')
+# finish
+plt.show()
+
+fig2, gs2 = wt.artists.create_figure(cols=[1, 'cbar'])
+ax = plt.subplot(gs2[0, 0])
+ax.pcolor(xi, yi, zn, cmap='default')
+ax.contour(xi, yi, zn, colors='k')
+# decoration
+ax.set_xlabel(exp.active_axes[0].name)
+ax.set_ylabel(exp.active_axes[1].name)
+cax = plt.subplot(gs2[0, 1])
 wt.artists.plot_colorbar(label='ampiltude')
 # finish
 plt.show()

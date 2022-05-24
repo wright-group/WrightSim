@@ -31,18 +31,18 @@ def to_wtdata(wsexp, wsscan):
     '''
     dataobj=wt.data.Data()
     strnglist=list()
-    for k in wsscan.active_axes:
+    for k in range(len(wsexp.active_axes)):
         dataobj.create_variable(
-            values=wsscan.active_axes[k].points,
-            name=str(wsscan.active_axes[k].name),
-            units=wsscan.active_axes[k].units,
-            dtype = wsscan.active_axes[k].points.type 
+            values=wsexp.active_axes[k].points,
+            name=str(wsexp.active_axes[k].name),
+            units=wsexp.active_axes[k].units,
+            dtype = wsexp.active_axes[k].points.dtype 
             )
-        strnglist.append(str(wsscan.active_axes[k].name))
+        strnglist.append(str(wsexp.active_axes[k].name))
     
-    stringcut=strnglist[1:-1]
+    stringcut=str(strnglist)[1:-1]
     dataobj.create_channel(name="sim", values=wsscan.sig[:], dtype=np.complex128)
-    dataobj.transform(stringcut)
+    eval(f"dataobj.transform({stringcut})")
     return dataobj
 
 
