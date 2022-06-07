@@ -44,6 +44,37 @@ class Experiment:
         self.pulse_class = pulse_class
         self.pulses = [self.pulse_class() for _ in self.pm]
 
+    def __getattr__(self, key):
+        """Gets called if attribute not in self.__dict__.
+
+        See __getattribute__.
+        """
+        if key in self.keys():
+            value = self[key]
+            setattr(self, key, value)
+            return self[key]
+        else:
+            message = "{0} has no attribute {1}".format(self.class_name, key)
+            raise AttributeError(message)
+
+    def __getitem__(self, key):
+        from WrightSim import experiment
+        from WrightSim import hamiltonian
+        
+        #out = super().__getitem__(key)
+        out=self.__getitem__(key)
+        if "class" in out.attrs.keys():
+            if out.attrs["class"] == "Axis":
+                return experiment._axis.Axis(parent=self, id=out.id)
+            elif out.attrs["class"] == "Hamiltonian":
+                return hamiltonian.TRSF_default(parent=self)
+        else:
+            return out
+
+
+    def __iter__(self):
+        pass
+
     def __repr__(self):
         return '<WrightSim.Experiment object \'{0}\' at {1}>'.format(self.name, str(id(self)))
 

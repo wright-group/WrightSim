@@ -63,7 +63,7 @@ print(time.perf_counter()-begin)
  #with wt.kit.Timer():
 #    scan2 = exp.run(ham, mp=None)
 # cpuSig = scan2.sig.copy()
-#ws.io.save_run("target.ws5", scan)
+ws.io.save_exp("target.exp", exp)
 #scansig=ws.io.load_run("target.ws5")
 plt.close('all')
 data=ws.io.to_wtdata(exp,scan)

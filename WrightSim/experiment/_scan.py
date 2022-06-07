@@ -47,6 +47,9 @@ class Scan:
         self.array = np.zeros(self.shape)
         self.efp = self._gen_efp()
 
+    def __iter__(self):
+        pass
+
     def _gen_efp(self, indices=None):
         """Get an array containing all parameters of efields.
 

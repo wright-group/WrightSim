@@ -1,14 +1,20 @@
 from WrightTools import _group as wt_group
 import WrightTools as wt
 
-from . import experiment
-from  .experiment import _scan as Scan
+from WrightSim import experiment
+
+#from . import experiment
+
+from  WrightSim.experiment import _scan as Scan
 import numpy as np
 import json
 import pickle
 import h5py
 import pathlib
 import os
+import pandas as pd
+from pandas import DataFrame as df
+import time
 
 
 def to_wtdata(wsexp, wsscan):
@@ -46,23 +52,60 @@ def to_wtdata(wsexp, wsscan):
     return dataobj
 
 
-def save_exp(filename, wsexp):
+def save_exp(filepath, wsexp):
     """Save a pickled WrightSim experiment."""
     assert (type(wsexp)==type(experiment.builtin("trive")))
-    pickleb=pickle.dumps(wsexp)
-    f=open(filename, "wb")
-    f.write(pickleb)
-    f.close()
+    strng=""
+    def as_str(exp, strng=""):
+        '''
+        try:
+            if exp.__dict__:
+                for i in exp.__dict__.keys():
+                    exp2=eval(f"exp.{i}")
+                    strng2=as_str(exp2, strng)
+                    strngo=strng2+strng
+            else:
+                for i in range(len(exp)):
+                    exp2=exp[i]
+                    strng2=as_str(exp2, strng)
+                    strngo=strng2+strng
+        except:
+            strngo=strng+" "+eval(str(exp))+"\n"        
+        return strngo
+        '''
+    h5py.File(filepath, "w")
+    new = wt_group.Group(filepath=filepath, edit_local=True)
+    # attrs
+    for k, v in wsexp.attrs.items():
+        new.attrs[k] = v
+    # children
+    #for k, v in wsexp.items():
+    #    super().copy(v, new, name=v.natural_name)
+    # finish
+    new.flush()
+    new.close()
+    #strng2=as_str(wsexp)
+    #for i in wsexp.__dict__.keys():
+    #    print(i)
+        #strng= strng+ f"{i}:" + f" {wsexp.{i}}\n"
+    #out=pickle.dumps(wsexp)
+    #unpickled=pd.read_pickle(out)
+    #dfr=pd.DataFrame(dict(wsexp))
+    #data=str(wsexp)
+    #f=open(filename, "w")
+    #f.write(strng)
+    #f.close()
     return 
 
 
 def load_exp(filename):
     """Load the JSON representation into an Experiment object."""
-    f=open(filename, "rb")
-    exp= pickle.load(f)
+    f=open(filename, "r")
+    jsonobj=json.load(f)
     f.close()
-    assert (type(exp)==type(experiment.builtin("trive")))
-    return exp
+    
+    #assert (type(exp)==type(experiment.builtin("trive")))
+    return jsonobj
 
 
 def save_run(filepath, wsrun):
@@ -120,3 +163,12 @@ def load_run(filepath):
     f.close()
 
     return obj
+
+
+if __name__ == '__main__':
+    exp = experiment.builtin('trive')
+    save_exp("test2.json", exp)
+    time.sleep(0.5)
+    data=load_exp("test2.json")
+
+    pass
