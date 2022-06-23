@@ -1,5 +1,6 @@
 # imports 
 import numpy as np
+import matplotlib.pyplot as plt
 
 # global constants
 n = 1.344
@@ -29,8 +30,8 @@ class DoveTransient():
     pulse_timings = list
         This is a list of the pulse timings with t0, t1, t2, t3, t4, and t5. t0 is the time the first 
         heaviside pulse is encountered and t5 is the time at which the end of the last pulse is encountered.
-    t: float or int
-        This is the time for which an intensity of the transient oscillations is measured.
+    t: list 
+        This is a list of the time(s) for which an intensity of the transient oscillations is measured.
     
     """
 
@@ -39,16 +40,18 @@ class DoveTransient():
                 omega_LOs=[1,1.07,1.07,1.01], 
                 gammas=[0,2.846,4.39,1e12], 
                 pulse_timings=[0,1000e-15,1900e-15,2900e-15,3800e-15,4800e-15], 
-                t=4800e-15,
+                t=[4800e-15],
                 efields=[42.9,3.16]):
 
-        self.omegas = np.array(omegas)
+        self.omegas = np.array(omegas) * 2 * np.pi * c
         self.omega_LOs = np.array(omega_LOs)
         
-        self.gammas = np.array(gammas)
+        self.gammas = np.array(gammas) * 2 * np.pi * c
         
         self.pulse_timings = np.array(pulse_timings)
         self.time = t
+
+        self.efields = efields
         
         self.mu1=self.mu(self.efields[0],self.gammas[1],self.omegas[1])
         self.mu2=self.mu(self.efields[1],self.gammas[2],self.omegas[2])
@@ -58,9 +61,11 @@ class DoveTransient():
         self.Rabi2=self.Rabi(self.mu2)
         self.Rabi3=self.Rabi(self.mu3)
 
+        self.out = None
 
 
-    def rho1(self, hsthresh=0.5, t=4800e-15):
+
+    def rho1(self, hsthresh=0.5, renorm=True, weight=1):
         global delta_omega
         gamma0 = self.gammas[0]
         gamma1 = self.gammas[1]
@@ -69,15 +74,24 @@ class DoveTransient():
         omega1 = self.omegas[1]
         omega1_LO = (self.omegas*self.omega_LOs)[1]
 
-        out = ((((np.exp(-gamma0 * t) - np.exp(-gamma1 * t)) / (2J * (gamma1 - gamma0)))
+        rho = lambda t: ((((np.exp(-gamma0 * t) - np.exp(-gamma1 * t)) / (2J * (gamma1 - gamma0)))
                    * (np.heaviside(t - t0, hsthresh) - np.heaviside(t - t1, hsthresh))
                    + np.heaviside(t - t1, hsthresh) * (
                                (np.exp(-gamma0 * t1) - np.exp(-gamma1 * t1)) / (2J * (gamma1 - gamma0)))
                    * (np.exp(-gamma1 * (t - t1)))) * np.exp(-1J * omega1 * t) * np.exp(1J * omega1_LO * t) * self.Rabi1)
-        return out
+
+        if renorm: 
+            rho_t = np.array(list(map(np.real, map(rho, self.time))))
+            rho_max = np.max(np.array(list(map(np.abs, rho_t))))
+            self.out = weight*rho_t/rho_max
+            return self.out
+
+        elif not renorm:
+            self.out = np.array(list(map(rho, self.time)))
+            return self.out
 
 
-    def rho2(self, hsthresh=0.5, t=4800e-15):
+    def rho2(self, hsthresh=0.5, renorm=True, weight=1):
         global delta_omega
         gamma0 = self.gammas[0]
         gamma1 = self.gammas[1]
@@ -88,17 +102,26 @@ class DoveTransient():
         omega2 = self.omegas[2]
         omega2_LO = (self.omegas*self.omega_LOs)[2]
 
-        out = ((np.exp(-gamma0 * t1) - np.exp(-gamma1 * t1)) / (2J * (gamma1 - gamma0))
+        rho = lambda t: ((np.exp(-gamma0 * t1) - np.exp(-gamma1 * t1)) / (2J * (gamma1 - gamma0))
                   * np.exp(-gamma1 * (t2 - t1))) * 1 * \
                  ((1 * ((np.exp(-gamma1 * (t - t2)) - np.exp(-gamma2 * (t - t2))) / (2J * (gamma2 - gamma1)))
                    * (np.heaviside(t - t2, hsthresh) - np.heaviside(t - t3, hsthresh))
                    - np.heaviside(t - t3, hsthresh) * ((np.exp(-gamma1 * (t3 - t2)) - np.exp(-gamma2 * (t3 - t2)))
                                                        / (2J * (gamma2 - gamma1))) * np.exp(-gamma2 * (t - t3)))
                   * np.exp(-1J * omega2 * t)) * np.exp(1J * omega2_LO * t) * self.Rabi1 * self.Rabi2
-        return out
+
+        if renorm: 
+            rho_t = np.array(list(map(np.real, map(rho, self.time))))
+            rho_max = np.max(np.array(list(map(np.abs, rho_t))))
+            self.out = weight*rho_t/rho_max
+            return self.out
+
+        elif not renorm:
+            self.out = np.array(list(map(rho, self.time)))
+            return self.out
 
 
-    def rho3(self, hsthresh=0.5, t=4800e-15):
+    def rho3(self, hsthresh=0.5, renorm=True, weight=1):
         global delta_omega
         gamma0 = self.gammas[0]
         gamma1 = self.gammas[1]
@@ -112,14 +135,28 @@ class DoveTransient():
         omega3 = self.omegas[3]
         omega3_LO = (self.omegas*self.omega_LOs)[3]
 
-        rho = ((np.exp(-gamma0 * t1) - np.exp(-gamma1 * t1)) / (2J * (gamma1 - gamma0))
+        rho = lambda t: ((np.exp(-gamma0 * t1) - np.exp(-gamma1 * t1)) / (2J * (gamma1 - gamma0))
                   * np.exp(-gamma1 * (t2 - t1))) \
                  * ((np.exp(-gamma2 * (t3-t2)) - np.exp(-gamma3 * (t3-t2))) / (2J * (gamma3 - gamma2))
                     * np.exp(-gamma2 * (t4 - t3))) * \
                  ((1 * (np.exp(-gamma2 * (t - t4)) / (2J * (delta_omega - gamma2)))
                    * (np.heaviside(t - t4, hsthresh) - np.heaviside(t - t5, hsthresh)))
                   * np.exp(-1J * omega3 * t)) * np.exp(1J * omega3_LO * t) * self.Rabi1 * self.Rabi2 * self.Rabi3
-        return out
+
+        if renorm: 
+            rho_t = np.array(list(map(np.real, map(rho, self.time))))
+            rho_max = np.max(np.array(list(map(np.abs, rho_t))))
+            self.out = weight*rho_t/rho_max
+            return self.out
+
+        elif not renorm:
+            self.out = np.array(list(map(rho, self.time)))
+            return self.out
+
+    
+    def plot(self, t_scale, a_scale=1):
+        plt.plot(self.time*t_scale, self.out*a_scale)
+        plt.show()  
 
 
 # tools
@@ -131,10 +168,46 @@ class DoveTransient():
         global I, c, hbar
         return (mu / hbar) * np.sqrt(8 * np.pi * I / c)
 
+
+    
+        
+        
+
 # TODO: maybe add rho_i, B_i, rho_max, and A_i?? Or figure out how to map stuff to make plots
 # maybe add time based plotable tuple with x and y values from class methods.
 # May benefit from a separate pulse class (maybe experiment too similar to wrightsim??)
 # U.U
 
 
-        
+
+
+d1 = 1000e-15
+d2 = d1
+
+pw = [280e-15, 180e-15, 600e-15]
+t0 = 0
+t1 = t0+pw[0]
+t2 = t1+d1
+t3 = t2+pw[1]
+t4 = t3+d2
+t5 = t4+pw[2]
+times = [t0, t1, t2, t3, t4, t5]
+
+omegas=[0,1640,3280,9670], 
+omega_LOs=[1,1.07,1.07,1.01], 
+gammas=[0,2.846,4.39,1e12], 
+pulse_timings=times, 
+efields=[42.9,3.16]
+
+
+
+t_i = np.linspace(0.01, 16000, num=16000)*0.0006e-12
+a = DoveTransient(t=t_i,omegas=[0,1640,3280,9670], omega_LOs=[1,1.07,1.07,1.01], gammas=[0,2.846,4.39,1e12], pulse_timings=times, efields=[42.9,3.16])
+x = a.rho1(renorm=True)
+b = DoveTransient(t=t_i,omegas=[0,1640,3280,9670], omega_LOs=[1,1.07,1.07,1.01], gammas=[0,2.846,4.39,1e12], pulse_timings=times, efields=[42.9,3.16])
+y = 0.65*b.rho2(renorm=True)
+c = DoveTransient(t=t_i,omegas=[0,1640,3280,9670], omega_LOs=[1,1.07,1.07,1.01], gammas=[0,2.846,4.39,1e12], pulse_timings=times, efields=[42.9,3.16])
+z = 0.47*c.rho3(renorm=True)
+
+plt.plot(t_i*1e12, x+y+z)
+plt.show()
