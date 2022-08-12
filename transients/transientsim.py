@@ -15,6 +15,7 @@ F4 = 1.3442
 Gamma = 5.15e11
 mu_const = 1.14e-18
 delta_omega = (77000 - 1e7 / 532 - 3000) * c * 2 * np.pi
+print(1e7 / 532)
 n = 1.344
 F = (n ** 2 + 2) / 3
 Rabi = lambda mu: (mu / hbar) * np.sqrt(8 * np.pi * I / c)
@@ -63,7 +64,7 @@ i_t4 = t4 / t_incr
 i_t5 = t5 / t_incr
 
 hsthresh = 0.5  # Not in John's work, but added for convenience
-Excit = lambda t, t0, t1: np.heaviside(t - t0, hsthresh) - np.heaviside(t - t1, hsthresh)
+Excit = lambda t, t0, t1: np.heaviside(t - t0, hsthresh) - np.heaviside(t - t1, hsthresh) 
 
 rho1 = lambda t: ((((np.exp(-gamma0 * t) - np.exp(-gamma1 * t)) / (2J * (gamma1 - gamma0)))
                    * (np.heaviside(t - t0, hsthresh) - np.heaviside(t - t1, hsthresh))
@@ -106,7 +107,7 @@ A1_i = rho1_i / rho1_max
 A2_i = 0.65 * rho2_i / rho2_max
 A3_i = 0.4 * rho3_i / rho3_max
 
-
+ 
 # plotting
 fig1 = plt.figure()
 ax1 = fig1.add_subplot()
