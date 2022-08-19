@@ -60,8 +60,55 @@ for i,t in enumerate(t_i):
     if t>t4:
         out_i = i
         break
-w1_scanrange = np.linspace(1550, 1750, 10)
-w2_scanrange = np.linspace(1550, 1750, 10)
+
+
+# experiment transient outputs
+a = DoveTransient(t=t_i,omegas=omegas, omega_LOs=omega_LOs, gammas=gammas, pulse_timings=times, efields=efields)
+x = a.rho1(renorm=True)                  
+b = DoveTransient(t=t_i,omegas=omegas, omega_LOs=omega_LOs, gammas=gammas, pulse_timings=times, efields=efields)
+y = b.rho2(renorm=True, weight=0.65)     
+c = DoveTransient(t=t_i,omegas=omegas, omega_LOs=omega_LOs, gammas=gammas, pulse_timings=times, efields=efields)
+z = c.rho3(renorm=True, weight=0.47)
+
+
+# plotting
+fig = plt.figure(constrained_layout=True)
+gs = fig.add_gridspec(2,2)
+trans = fig.add_subplot(gs[0:2,0])
+intensity_plus = fig.add_subplot(gs[0,1])
+intensity_minus = fig.add_subplot(gs[1,1])
+
+x_axis = t_i*1e12
+trans.plot(x_axis, x)
+trans.plot(x_axis, y)
+trans.plot(x_axis, z, c='red')
+trans.plot(x_axis, [E_pulses(t) for t in x_axis], c='k')
+trans.set_title(r'$\omega_{1},\omega_{2}$')
+trans.set_xlabel('time (ps)')
+trans.set_ylabel('Amplitude')
+
+intensity_plus.plot(x_axis, (x+y+z)**2)
+intensity_plus.plot(x_axis, [E_pulses(t) for t in x_axis], c='k')
+intensity_plus.set_title(r'$\omega_{1}+\omega_{2}+\omega_{3}$')
+intensity_plus.set_xlabel('time (ps)')
+intensity_plus.set_ylabel('Amplitude')
+
+intensity_minus.plot(x_axis, (x-y+z)**2)
+intensity_minus.plot(x_axis, [E_pulses(t) for t in x_axis], c='k')
+intensity_minus.set_title(r'$\omega_{1}-\omega_{2}+\omega_{3}$')
+intensity_minus.set_xlabel('time (ps)')
+intensity_minus.set_ylabel('Amplitude')
+
+
+
+plt.show()
+
+
+
+
+"""
+w1_scanrange = np.linspace(1550, 1750, 21)
+w2_scanrange = np.linspace(1550, 1750, 21)
 simulation_data=np.zeros([len(w2_scanrange),len(w1_scanrange)])
 
 remaining = len(w1_scanrange)*len(w2_scanrange)
@@ -85,7 +132,7 @@ for i, w1 in enumerate(w1_scanrange):
         
         t_i_out = t_i[out_i:]
         outcoherence = [out**2 for out in x[out_i:]-y[out_i:]+z[out_i]]
-        simulation_data[i,j]=sum(outcoherence)
+        simulation_data[j,i]=sum(outcoherence)
         end=time.time()
 
         print(f'{(end-start)*remaining/60} mins remaining', remaining)
@@ -93,7 +140,7 @@ for i, w1 in enumerate(w1_scanrange):
 plt.imshow(simulation_data, interpolation="nearest", origin="lower")
 plt.colorbar()
 plt.show()
-
+"""
 
 
 
