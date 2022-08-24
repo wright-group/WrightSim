@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 import time
-from matplotlib.widgets import Slider, Button
+from matplotlib.widgets import Slider, Button, TextBox
 import asyncio
 
 
@@ -93,29 +93,41 @@ trans.set_ylabel('Amplitude')
 
 int_plus = intensity_plus.plot(x_axis, (x+y)**2)
 int_plus_efields = intensity_plus.plot(x_axis, [E_pulses(t) for t in x_axis], c='k')
-intensity_plus.set_title(r'$\omega_{1}+\omega_{2}+\omega_{3}$')
+intensity_plus.set_title(r'$(\omega_{1}+\omega_{2}+\omega_{3})^2$')
 intensity_plus.set_xlabel('time (ps)')
-intensity_plus.set_ylabel('Amplitude')
+intensity_plus.set_ylabel('Intensity')
 
 int_minus = intensity_minus.plot(x_axis, (x-y)**2)
 int_minus_efields = intensity_minus.plot(x_axis, [E_pulses(t) for t in x_axis], c='k')
-intensity_minus.set_title(r'$\omega_{1}-\omega_{2}+\omega_{3}$')
+intensity_minus.set_title(r'$(\omega_{1}-\omega_{2}+\omega_{3})^2$')
 intensity_minus.set_xlabel('time (ps)')
-intensity_minus.set_ylabel('Amplitude')
+intensity_minus.set_ylabel('Intensity')
 
 
 # plot sliders
-axd1 = plt.axes([0.1, 0.05 , 0.8, 0.03])
-axd2 = plt.axes([0.1, 0.1, 0.8, 0.03])
-axw1 = plt.axes([0.1, 0.15, 0.8, 0.03])
-axw2 = plt.axes([0.1, 0.2, 0.8, 0.03])
+axd1_slider = plt.axes([0.1, 0.05 , 0.6, 0.03])
+axd2_slider = plt.axes([0.1, 0.1, 0.6, 0.03])
+axw1_slider = plt.axes([0.1, 0.15, 0.6, 0.03])
+axw2_slider = plt.axes([0.1, 0.2, 0.6, 0.03])
 
-d1_slider = Slider(axd1, 'd1', 1e-15, 2000e-15, 700e-15)
-d2_slider = Slider(axd2, 'd2', 1e-15, 2000e-15, 700e-15)
-w1_slider = Slider(axw1, 'w1', 0.0, 2000, 1620)
-w2_slider = Slider(axw2, 'w2', 0.0, 4000, 3240)
+d1_slider = Slider(axd1_slider, 'd1', 1e-15, 2000e-15, 700e-15)
+d2_slider = Slider(axd2_slider, 'd2', 1e-15, 2000e-15, 700e-15)
+w1_slider = Slider(axw1_slider, 'w1', 0.0, 2000, 1620)
+w2_slider = Slider(axw2_slider, 'w2', 0.0, 4000, 3240)
+
+# plot textboxes
+axd1_tb = plt.axes([0.8, 0.05 , 0.05, 0.03])
+axd2_tb = plt.axes([0.8, 0.1, 0.05, 0.03])
+axw1_tb = plt.axes([0.8, 0.15, 0.05, 0.03])
+axw2_tb = plt.axes([0.8, 0.2, 0.05, 0.03])
+
+d1_tb = TextBox(axd1_tb, '', '')
+d2_tb = TextBox(axd2_tb, '', '')
+w1_tb = TextBox(axw1_tb, '', '')
+w2_tb = TextBox(axw2_tb, '', '')
 
 async def update(val):
+    t1 = time.time()
     ## delays
     d1 = d1_slider.val
     d2 = d2_slider.val
@@ -180,13 +192,31 @@ async def update(val):
     int_plus_efields[0].set_ydata([E_pulses(t) for t in x_axis])
     int_minus[0].set_ydata((x-y)**2)
     int_minus_efields[0].set_ydata([E_pulses(t) for t in x_axis])
+    print(time.time()-t1)
     
 def wrapper(val):
     return asyncio.run(update(val))
+def d1_tb_wrapper(val):
+    val=float(val)
+    return d1_slider.set_val(val)
+def d2_tb_wrapper(val):
+    val=float(val)
+    return d2_slider.set_val(val)
+def w1_tb_wrapper(val):
+    val=float(val)
+    return w1_slider.set_val(val)
+def w2_tb_wrapper(val):
+    val=float(val)
+    return w2_slider.set_val(val)
+    
 d1_slider.on_changed(wrapper)
 d2_slider.on_changed(wrapper)
 w1_slider.on_changed(wrapper)
 w2_slider.on_changed(wrapper)
+d1_tb.on_submit(d1_tb_wrapper)
+d2_tb.on_submit(d2_tb_wrapper)
+w1_tb.on_submit(w1_tb_wrapper)
+w2_tb.on_submit(w2_tb_wrapper)
 
 
 plt.show()
