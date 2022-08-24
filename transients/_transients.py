@@ -5,6 +5,7 @@ __all__ = ["DoveTransient"]
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
+import asyncio
 
 # global constants
 n = 1.344
@@ -69,7 +70,7 @@ class DoveTransient():
 
 
 
-    def rho1(self, hsthresh=0.5, renorm=True, weight=1):
+    async def rho1(self, hsthresh=0.5, renorm=True, weight=1):
         global delta_omega
         gamma0 = self.gammas[0]
         gamma1 = self.gammas[1]
@@ -95,7 +96,7 @@ class DoveTransient():
             return self.out
 
 
-    def rho2(self, hsthresh=0.5, renorm=True, weight=1):
+    async def rho2(self, hsthresh=0.5, renorm=True, weight=1):
         global delta_omega
         gamma0 = self.gammas[0]
         gamma1 = self.gammas[1]
@@ -125,7 +126,7 @@ class DoveTransient():
             return self.out
 
 
-    def rho3(self, hsthresh=0.5, renorm=True, weight=1):
+    async def rho3(self, hsthresh=0.5, renorm=True, weight=1):
         global delta_omega
         gamma0 = self.gammas[0]
         gamma1 = self.gammas[1]
