@@ -1,4 +1,4 @@
-from _transients import *
+from _transientsv2 import *
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
@@ -25,8 +25,8 @@ times = [t0,t1,t2,t3,t4,t5]
 
 ## transition frequencies
 wg = 0
-w1 = 1675
-w2 = 1675+1615
+w1 = 1620
+w2 = 1620+1655
 w3 = 9670
 omegas = [wg,w1,w2,w3]
 
@@ -66,7 +66,7 @@ for i,t in enumerate(t_i):
 
 # experiment transient outputs
 a = DoveTransient(t=t_i,omegas=omegas, omega_LOs=omega_LOs, gammas=gammas, pulse_timings=times, efields=efields)
-x = asyncio.run(a.rho1(renorm=True))                  
+x = asyncio.run(a.rho1(1620,renorm=True))                  
 b = DoveTransient(t=t_i,omegas=omegas, omega_LOs=omega_LOs, gammas=gammas, pulse_timings=times, efields=efields)
 y = asyncio.run(b.rho2(renorm=True, weight=0.65))     
 c = DoveTransient(t=t_i,omegas=omegas, omega_LOs=omega_LOs, gammas=gammas, pulse_timings=times, efields=efields)
@@ -84,8 +84,8 @@ plt.subplots_adjust(bottom=0.20)
 x_axis = t_i*1e12
 
 trans_w1 = trans.plot(x_axis, x, linewidth=2.5, alpha=0.7)
-trans_w2 = trans.plot(x_axis, y, linewidth=2.5, alpha=0.7)
-trans_w3 = trans.plot(x_axis, z, linewidth=2.5, alpha=0.7, c='red')
+#trans_w2 = trans.plot(x_axis, y, linewidth=2.5, alpha=0.7)
+#trans_w3 = trans.plot(x_axis, z, linewidth=2.5, alpha=0.7, c='red')
 trans_efields = trans.plot(x_axis, [E_pulses(t) for t in x_axis], c='k')
 trans.set_title(r'$\omega_{1},\omega_{2},\omega_{3}$')
 trans.set_xlabel('time (ps)')
@@ -180,13 +180,13 @@ async def update(val):
     a = DoveTransient(t=t_i,omegas=omegas, omega_LOs=omega_LOs, gammas=gammas, pulse_timings=times, efields=efields)              
     b = DoveTransient(t=t_i,omegas=omegas, omega_LOs=omega_LOs, gammas=gammas, pulse_timings=times, efields=efields)  
     c = DoveTransient(t=t_i,omegas=omegas, omega_LOs=omega_LOs, gammas=gammas, pulse_timings=times, efields=efields)
-    x,y,z = await asyncio.gather(a.rho1(renorm=True),    
+    x,y,z = await asyncio.gather(a.rho1(1620, renorm=True),    
                                 b.rho2(renorm=True, weight=0.65),   
                                 c.rho3(renorm=True, weight=0.47))
     
     trans_w1[0].set_ydata(x)
-    trans_w2[0].set_ydata(y)
-    trans_w3[0].set_ydata(z)
+    #trans_w2[0].set_ydata(y)
+    #trans_w3[0].set_ydata(z)
     trans_efields[0].set_ydata([E_pulses(t) for t in x_axis])
     int_plus[0].set_ydata((x+y)**2)
     int_plus_efields[0].set_ydata([E_pulses(t) for t in x_axis])
@@ -218,7 +218,7 @@ d2_tb.on_submit(d2_tb_wrapper)
 w1_tb.on_submit(w1_tb_wrapper)
 w2_tb.on_submit(w2_tb_wrapper)
 
-
+print("HERE")
 plt.show()
 
 
