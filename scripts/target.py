@@ -65,18 +65,42 @@ print(time.perf_counter()-begin)
 # cpuSig = scan2.sig.copy()
 plt.close('all')
 # measure and plot
-fig, gs = wt.artists.create_figure(cols=[1, 'cbar'])
-ax = plt.subplot(gs[0, 0])
+
 xi = exp.active_axes[0].points
 yi = exp.active_axes[1].points
-zi = np.abs(scan.sig.sum(axis=-2)).sum(axis=-1).T
-# zi /= zi.max()
+
+datao=ws.wtdata.convert(scan)
+
+datao.transform('w1','w2','out')
+ch0=datao.channels[0][:]
+ch1=datao.channels[1][:]
+chsumsq=(ch0+ch1)**2
+zi = (chsumsq.sum(axis=-1)).T
+
+zi2 = np.abs(scan.sig.sum(axis=-2)).sum(axis=-1).T
+
+
+fig, gs = wt.artists.create_figure(cols=[1, 'cbar'])
+ax = plt.subplot(gs[0, 0])
 ax.pcolor(xi, yi, zi, cmap='default')
 ax.contour(xi, yi, zi, colors='k')
 # decoration
 ax.set_xlabel(exp.active_axes[0].name)
 ax.set_ylabel(exp.active_axes[1].name)
 cax = plt.subplot(gs[0, 1])
+wt.artists.plot_colorbar(label='ampiltude')
+# finish
+plt.show()
+
+
+fig2, gs2 = wt.artists.create_figure(cols=[1, 'cbar'])
+ax2 = plt.subplot(gs2[0, 0])
+ax2.pcolor(xi, yi, zi2, cmap='default')
+ax2.contour(xi, yi, zi2, colors='k')
+# decoration
+ax2.set_xlabel(exp.active_axes[0].name)
+ax2.set_ylabel(exp.active_axes[1].name)
+cax2 = plt.subplot(gs2[0, 1])
 wt.artists.plot_colorbar(label='ampiltude')
 # finish
 plt.show()

@@ -115,7 +115,7 @@ class Hamiltonian:
             self.mu = np.array([1.0, 1.0], dtype=np.complex128)
         else:
             self.mu = np.array(mu, dtype=np.complex128)
-
+        
         if omega is None:
             w_ag = w_central
             w_2aa = w_ag - coupling
