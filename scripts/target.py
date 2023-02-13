@@ -65,12 +65,20 @@ print(time.perf_counter()-begin)
 # cpuSig = scan2.sig.copy()
 plt.close('all')
 # measure and plot
-fig, gs = wt.artists.create_figure(cols=[1, 'cbar'])
-ax = plt.subplot(gs[0, 0])
+
 xi = exp.active_axes[0].points
 yi = exp.active_axes[1].points
-zi = np.abs(scan.sig.sum(axis=-2)).sum(axis=-1).T
-# zi /= zi.max()
+
+zi0=scan.sig.channels[0][:]
+zi1=scan.sig.channels[1][:]
+
+zisum=zi0+zi1
+#zi = np.abs(scan.sig.sum(axis=-2)).sum(axis=-1).T  #original
+zi = np.abs(zisum).sum(axis=-1).T  #conversion of original
+#zi = ((np.abs(zi0)+np.abs(zi1))**2).sum(axis=-1).T #primary suggested change
+
+fig, gs = wt.artists.create_figure(cols=[1, 'cbar'])
+ax = plt.subplot(gs[0, 0])
 ax.pcolor(xi, yi, zi, cmap='default')
 ax.contour(xi, yi, zi, colors='k')
 # decoration
@@ -80,3 +88,5 @@ cax = plt.subplot(gs[0, 1])
 wt.artists.plot_colorbar(label='ampiltude')
 # finish
 plt.show()
+
+

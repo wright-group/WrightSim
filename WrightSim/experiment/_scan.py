@@ -123,7 +123,7 @@ class Scan:
 
         shape.append(self.iprime)
         self.pulse_class.pm = self.pm
-        self.sig = np.empty(shape, dtype=np.complex128)
+        sig = np.empty(shape, dtype=np.complex128)
         if mp == 'gpu':
             from pycuda import driver as cuda
             from pycuda.compiler import SourceModule
@@ -164,16 +164,39 @@ class Scan:
             pool.join()
             # now write to the np array
             for i in range(len(results)):
-                self.sig[results[i][0]] = results[i][1]
+                sig[results[i][0]] = results[i][1]
             del results
         else:
             #with wt.kit.Timer():
             for idx in np.ndindex(self.shape):
                 efields = self.pulse_class.pulse(self.efp[idx], self.t_args, pm=self.pm)
-                self.sig[idx] = self.ham.propagator(
+                sig[idx] = self.ham.propagator(
                     np.arange(*self.t_args), efields, self.iprime, self.ham
                 )
+            
+        units_dict= {
+            "A" : None,
+            "s" : "fs",
+            "d" : "fs",
+            "w" : "wn",
+            "p" : "rad" 
+            }
+        self.sig=wt.data.Data()
+        
+        axes_list=list()
+        
+        for axis_obj in self.axis_objs:
+            axis_obj_units=units_dict[axis_obj.parameter]    
+            self.sig.create_variable(name=axis_obj.name, values=axis_obj.points, units=axis_obj_units)
+            axes_list.append(axis_obj.name)
+        self.sig.create_variable(name="out", values=self.t, units="fs")
+        axes_list.append("out")
+        sig_swapped=sig.swapaxes(-2,-1)
+        for idx,rec_idx in enumerate(self.ham.recorded_indices):
+            self.sig.create_channel(self.ham.labels[rec_idx], values=sig_swapped[...,idx], dtype=np.complex128)
+        self.sig.transform(*axes_list)
         return self.sig
+
 
     def get_color(self):
         """Get an array of driven signal frequency for each array point."""
