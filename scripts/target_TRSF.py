@@ -57,7 +57,14 @@ if __name__ == '__main__':
     xi = exp.active_axes[0].points
     yi = exp.active_axes[2].points
     
-    zi = np.sum(np.abs(np.sum(scan.sig, axis=-2)), axis=-1)
+    #zi = np.sum(np.abs(np.sum(scan.sig, axis=-2)), axis=-1)
+    zi0=scan.sig.channels[0][:]
+    zi1=scan.sig.channels[1][:]
+    zisum=zi0+zi1
+    #zi = np.abs(scan.sig.sum(axis=-2)).sum(axis=-1).T  #original
+    zi = np.abs(zisum).sum(axis=-1).T  #conversion of original
+    #zi = ((np.abs(zi0)+np.abs(zi1))**2).sum(axis=-1).T #primary suggested change
+    
     zi = zi.diagonal(axis1=0, axis2=1).copy()
     zi /= np.nanmax(zi)
     ax.pcolormesh(xi, yi, zi, vmin=0, vmax=1, cmap='default')

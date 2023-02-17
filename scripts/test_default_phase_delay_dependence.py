@@ -45,7 +45,11 @@ if False:
     plt.show()
 
 efields = scan.efields()
-sig = scan.sig.sum(axis=-2)
+zi0=scan.sig.channels[0][:]
+zi1=scan.sig.channels[1][:]
+sig=zi0+zi1
+
+#sig = scan.sig.sum(axis=-2) #original
 driven_sig = 1j * efields.prod(axis=-2)
 
 # look at the phase fringes ddue to interference with each pulse
