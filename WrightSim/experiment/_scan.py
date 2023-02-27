@@ -44,7 +44,6 @@ class Scan:
         # initialize
         self.coords_set = []
         self.shape = tuple(a.points.size for a in self.exp.active_axes)
-        self.array = np.zeros(self.shape)
         self.efp = self._gen_efp()
 
     def _gen_efp(self, indices=None):
@@ -102,7 +101,7 @@ class Scan:
         numpy ndarray
             Array in (axes..., outgroups, time)
         """
-        shape = list(self.array.shape)
+        shape = list(self.shape)
         shape.append(len(self.ham.recorded_indices))
         self.pulse_class.timestep = self.timestep
 
@@ -146,17 +145,17 @@ class Scan:
             kernel = mod.get_function('kernel')
             kernel(start, stop, np.float64(self.timestep), np.intp(3), efpPtr,
                    pmPtr, np.intp(self.iprime), hamPtr, sigPtr,
-                   grid=(self.array.size//256,1), block=(256,1,1))
+                   grid=(mul(self.shape)//256,1), block=(256,1,1))
 
-            cuda.memcpy_dtoh(self.sig, sigPtr)
+            cuda.memcpy_dtoh(sig, sigPtr)
         elif mp:
             from multiprocessing import Pool, cpu_count
             arglist = [[ind, self.iprime, self.t_args, self.ham,
                         self.pulse_class, self.efp[ind], self.pm,
                         self.ham.propagator]
-                        for ind in np.ndindex(self.array.shape)]
+                        for ind in np.ndindex(self.shape)]
             pool = Pool(processes=cpu_count())
-            chunksize = int(self.array.size / cpu_count())
+            chunksize = int(np.prod(self.shape) / cpu_count())
             #print('chunksize:', chunksize)
             #with wt.kit.Timer():
             results = pool.map(do_work, arglist, chunksize=chunksize)
@@ -173,30 +172,40 @@ class Scan:
                 sig[idx] = self.ham.propagator(
                     np.arange(*self.t_args), efields, self.iprime, self.ham
                 )
-            
+
         units_dict= {
             "A" : None,
             "s" : "fs",
             "d" : "fs",
             "w" : "wn",
             "p" : "rad" 
-            }
+        }
+
         self.sig=wt.data.Data()
         
-        axes_list=list()
-        
-        for axis_obj in self.axis_objs:
-            axis_obj_units=units_dict[axis_obj.parameter]    
-            self.sig.create_variable(name=axis_obj.name, values=axis_obj.points, units=axis_obj_units)
-            axes_list.append(axis_obj.name)
-        self.sig.create_variable(name="out", values=self.t, units="fs")
-        axes_list.append("out")
-        sig_swapped=sig.swapaxes(-2,-1)
-        for idx,rec_idx in enumerate(self.ham.recorded_indices):
-            self.sig.create_channel(self.ham.labels[rec_idx], values=sig_swapped[...,idx], dtype=np.complex128)
-        self.sig.transform(*axes_list)
-        return self.sig
+        self.shape = tuple(a.points.size for a in self.exp.active_axes)
 
+        for i, axis_obj in enumerate(self.axis_objs):
+            shape = [1] * len(self.shape) + [1]
+            shape[i] = -1
+            self.sig.create_variable(
+                name=axis_obj.name,
+                values=axis_obj.points.reshape(shape),
+                units=units_dict[axis_obj.parameter]
+            )
+            axes_list.append(axis_obj.name)
+        self.sig.create_variable(
+            name="time",
+            values=self.t.reshape([1] * len(self.shape) + [-1]),
+            units="fs"
+        )
+
+        for idx,rec_idx in enumerate(self.ham.recorded_indices):
+            self.sig.create_channel(self.ham.labels[rec_idx], values=sig_swapped[..., idx, :], dtype=np.complex128)
+
+        self.sig.transform(*[n for n in self.variable_names()])
+
+        return self.sig
 
     def get_color(self):
         """Get an array of driven signal frequency for each array point."""
