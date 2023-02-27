@@ -18,7 +18,7 @@ def do_work(arglist):
     efields = pulse_class.pulse(efpi, t_args, pm=pm)
     t = np.arange(*t_args)
     out = evolve_func(t, efields, iprime, H)
-    #if indices[-1] == 0:
+    # if indices[-1] == 0:
     #   print(indices, '              \r',)
     return indices, out
 
@@ -27,7 +27,6 @@ def do_work(arglist):
 
 
 class Scan:
-
     def __init__(self, experiment, hamiltonian, windowed=True):
         self.exp = experiment
         self.ham = hamiltonian
@@ -86,7 +85,7 @@ class Scan:
     }
     """
 
-    def run(self, mp='cpu', chunk=False):
+    def run(self, mp="cpu", chunk=False):
         """Run the scan.
 
         Parameters
@@ -106,58 +105,87 @@ class Scan:
         self.pulse_class.timestep = self.timestep
 
         # simulate over fixed time interval
-        d_ind = [i for i in range(len(self.cols)) if self.cols[i] == 'd']
+        d_ind = [i for i in range(len(self.cols)) if self.cols[i] == "d"]
         t_max = self.efp[..., d_ind].max()
         t_min = self.efp[..., d_ind].min()
-        self.t_args = (t_min - self.early_buffer, t_max + self.late_buffer, self.timestep)
+        self.t_args = (
+            t_min - self.early_buffer,
+            t_max + self.late_buffer,
+            self.timestep,
+        )
         self.t = np.arange(*self.t_args)
 
-        if self.windowed:   # assume emission always close to end of time bound
-            self.iprime = np.arange(-self.early_buffer, 
-                                    self.late_buffer, 
-                                    self.timestep).size
+        if self.windowed:  # assume emission always close to end of time bound
+            self.iprime = np.arange(
+                -self.early_buffer, self.late_buffer, self.timestep
+            ).size
         else:
             self.iprime = self.t.size
-
 
         shape.append(self.iprime)
         self.pulse_class.pm = self.pm
         sig = np.empty(shape, dtype=np.complex128)
-        if mp == 'gpu':
+        if mp == "gpu":
             from pycuda import driver as cuda
             from pycuda.compiler import SourceModule
             from pycuda import autoinit
+
             hamPtr = cuda.mem_alloc(self.ham.cuda_mem_size)
             self.ham.to_device(hamPtr)
             efpPtr = cuda.to_device(self.efp)
             pmPtr = cuda.to_device(np.array(self.pm, dtype=np.int32))
             sigPtr = cuda.mem_alloc(self.sig.nbytes)
 
-            d_ind = self.pulse_class.cols.index('d')
+            d_ind = self.pulse_class.cols.index("d")
             start = np.min(self.efp[..., d_ind]) - self.early_buffer
             stop = np.max(self.efp[..., d_ind]) + self.late_buffer
 
-            mod = SourceModule(self.ham.cuda_struct + self.ham.cuda_matrix_source +
-                               propagate.muladd_cuda_source + propagate.dot_cuda_source +
-                               propagate.pulse_cuda_source + propagate.runge_kutta_cuda_source +
-                               Scan.kernel_cuda_source)
+            mod = SourceModule(
+                self.ham.cuda_struct
+                + self.ham.cuda_matrix_source
+                + propagate.muladd_cuda_source
+                + propagate.dot_cuda_source
+                + propagate.pulse_cuda_source
+                + propagate.runge_kutta_cuda_source
+                + Scan.kernel_cuda_source
+            )
 
-            kernel = mod.get_function('kernel')
-            kernel(start, stop, np.float64(self.timestep), np.intp(3), efpPtr,
-                   pmPtr, np.intp(self.iprime), hamPtr, sigPtr,
-                   grid=(mul(self.shape)//256,1), block=(256,1,1))
+            kernel = mod.get_function("kernel")
+            kernel(
+                start,
+                stop,
+                np.float64(self.timestep),
+                np.intp(3),
+                efpPtr,
+                pmPtr,
+                np.intp(self.iprime),
+                hamPtr,
+                sigPtr,
+                grid=(mul(self.shape) // 256, 1),
+                block=(256, 1, 1),
+            )
 
             cuda.memcpy_dtoh(sig, sigPtr)
         elif mp:
             from multiprocessing import Pool, cpu_count
-            arglist = [[ind, self.iprime, self.t_args, self.ham,
-                        self.pulse_class, self.efp[ind], self.pm,
-                        self.ham.propagator]
-                        for ind in np.ndindex(self.shape)]
+
+            arglist = [
+                [
+                    ind,
+                    self.iprime,
+                    self.t_args,
+                    self.ham,
+                    self.pulse_class,
+                    self.efp[ind],
+                    self.pm,
+                    self.ham.propagator,
+                ]
+                for ind in np.ndindex(self.shape)
+            ]
             pool = Pool(processes=cpu_count())
             chunksize = int(np.prod(self.shape) / cpu_count())
-            #print('chunksize:', chunksize)
-            #with wt.kit.Timer():
+            # print('chunksize:', chunksize)
+            # with wt.kit.Timer():
             results = pool.map(do_work, arglist, chunksize=chunksize)
             pool.close()
             pool.join()
@@ -166,24 +194,16 @@ class Scan:
                 sig[results[i][0]] = results[i][1]
             del results
         else:
-            #with wt.kit.Timer():
+            # with wt.kit.Timer():
             for idx in np.ndindex(self.shape):
                 efields = self.pulse_class.pulse(self.efp[idx], self.t_args, pm=self.pm)
                 sig[idx] = self.ham.propagator(
                     np.arange(*self.t_args), efields, self.iprime, self.ham
                 )
 
-        units_dict= {
-            "A" : None,
-            "s" : "fs",
-            "d" : "fs",
-            "w" : "wn",
-            "p" : "rad" 
-        }
+        units_dict = {"A": None, "s": "fs", "d": "fs", "w": "wn", "p": "rad"}
 
-        self.sig=wt.data.Data()
-        
-        self.shape = tuple(a.points.size for a in self.exp.active_axes)
+        self.sig = wt.data.Data()
 
         for i, axis_obj in enumerate(self.axis_objs):
             shape = [1] * len(self.shape) + [1]
@@ -191,17 +211,18 @@ class Scan:
             self.sig.create_variable(
                 name=axis_obj.name,
                 values=axis_obj.points.reshape(shape),
-                units=units_dict[axis_obj.parameter]
+                units=units_dict[axis_obj.parameter],
             )
-            axes_list.append(axis_obj.name)
         self.sig.create_variable(
-            name="time",
-            values=self.t.reshape([1] * len(self.shape) + [-1]),
-            units="fs"
+            name="time", values=self.t.reshape([1] * len(self.shape) + [-1]), units="fs"
         )
 
-        for idx,rec_idx in enumerate(self.ham.recorded_indices):
-            self.sig.create_channel(self.ham.labels[rec_idx], values=sig_swapped[..., idx, :], dtype=np.complex128)
+        for idx, rec_idx in enumerate(self.ham.recorded_indices):
+            self.sig.create_channel(
+                self.ham.labels[rec_idx],
+                values=sig_swapped[..., idx, :],
+                dtype=np.complex128,
+            )
 
         self.sig.transform(*[n for n in self.variable_names()])
 
@@ -210,7 +231,7 @@ class Scan:
     def get_color(self):
         """Get an array of driven signal frequency for each array point."""
         # in wavenumbers
-        w_axis = [i for i in range(len(self.cols)) if self.cols[i] == 'w'][0]
+        w_axis = [i for i in range(len(self.cols)) if self.cols[i] == "w"][0]
         wtemp = self.efp[..., w_axis].copy()
         wtemp *= self.pm
         wm = wtemp.sum(axis=-1)
@@ -256,6 +277,6 @@ class Scan:
             with wt.kit.Timer():
                 for ind in np.ndindex(tuple(efields_shape[:-2])):
                     efi = self.pulse_class.pulse(efp[ind], self.t_args, pm=self.pm)
-                    efields[ind] = efi[-efields_shape[-1]:]                
+                    efields[ind] = efi[-efields_shape[-1]:]
 
         return efields
