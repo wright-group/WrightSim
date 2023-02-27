@@ -58,7 +58,7 @@ if __name__ == "__main__":
         values=np.abs(data.channels[0][:] + data.channels[1][:]).sum(axis=-1)[..., None]
     )
 
-    data.transform("w1", "w2", "w3")
+    data.transform(*[a for a in data.axis_names if a != "time"])
 
     out = wt.artists.interact2D(data, channel=-1)
     plt.show()

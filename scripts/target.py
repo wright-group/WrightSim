@@ -27,9 +27,8 @@ here = os.path.abspath(os.path.dirname(__file__))
 dt = 50.0  # pulse duration (fs)
 slitwidth = 120.0  # mono resolution (wn)
 
-nw = 51  # number of frequency points (w1 and w2)
-nt = 51  # number of delay points (d2)
-
+nw = 16  # number of frequency points (w1 and w2)
+nt = 16  # number of delay points (d2)
 
 # --- workspace -----------------------------------------------------------------------------------
 
@@ -47,10 +46,8 @@ exp.w2.points = (
     np.linspace(-2.5, 2.5, nw) * 4 * np.log(2) / dt * 1 / (2 * np.pi * 3e-5) + w_central
 )
 # exp.w2.points = 0.
-exp.d2.points = np.linspace(-2 * dt, 8 * dt, nt)
+exp.d2.points = np.linspace(-3 * dt, 3 * dt, nt)
 exp.w1.active = exp.w2.active = exp.d2.active = True
-exp.d2.points = 0 * dt
-exp.d2.active = False
 exp.timestep = 2.0
 exp.early_buffer = 2 * dt
 exp.late_buffer = 6 * tau
@@ -72,7 +69,7 @@ if __name__ == "__main__":
         values=np.abs(data.channels[0][:] + data.channels[1][:]).sum(axis=-1)[..., None]
     )
 
-    data.transform("w1", "w2")
+    data.transform(*[a for a in data.axis_names if a != "time"])
 
     out = wt.artists.interact2D(data, channel=-1)
     plt.show()
