@@ -60,19 +60,19 @@ ham = ws.hamiltonian.Hamiltonian(w_central=w_central, coupling=coupling, tau=tau
 ham.recorded_indices = [7, 8]
 
 # do scan
-with wt.kit.Timer():
-    scan = exp.run(ham, mp=False)  # 'cpu')
+if __name__ == "__main__":
+    with wt.kit.Timer():
+        scan = exp.run(ham, mp=False)  # 'cpu')
 
-# use WrightTools api
-data = scan.sig
-data.print_tree()
+    # use WrightTools api
+    data = scan.sig
 
-data.create_channel(
-    name="measured_amplitude",
-    values=np.abs(data.channels[0][:] + data.channels[1][:]).sum(axis=-1)[..., None]
-)
+    data.create_channel(
+        name="measured_amplitude",
+        values=np.abs(data.channels[0][:] + data.channels[1][:]).sum(axis=-1)[..., None]
+    )
 
-data.transform("w1", "w2")
+    data.transform("w1", "w2")
 
-out = wt.artists.interact2D(data, channel=-1)
-plt.show()
+    out = wt.artists.interact2D(data, channel=-1)
+    plt.show()
