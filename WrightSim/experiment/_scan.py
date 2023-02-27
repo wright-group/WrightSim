@@ -220,13 +220,12 @@ class Scan:
         for idx, rec_idx in enumerate(self.ham.recorded_indices):
             self.sig.create_channel(
                 self.ham.labels[rec_idx],
-                values=sig_swapped[..., idx, :],
+                values=sig[..., idx, :],
                 dtype=np.complex128,
+                signed=True
             )
 
-        self.sig.transform(*[n for n in self.variable_names()])
-
-        return self.sig
+        self.sig.transform(*[n for n in self.sig.variable_names])
 
     def get_color(self):
         """Get an array of driven signal frequency for each array point."""
