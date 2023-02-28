@@ -24,59 +24,52 @@ import WrightSim as ws
 here = os.path.abspath(os.path.dirname(__file__))
 
 
-dt = 50.  # pulse duration (fs)
-slitwidth = 120.  # mono resolution (wn)
+dt = 50.0  # pulse duration (fs)
+slitwidth = 120.0  # mono resolution (wn)
 
-nw = 51  # number of frequency points (w1 and w2)
-nt = 51  # number of delay points (d2)
-
+nw = 16  # number of frequency points (w1 and w2)
+nt = 16  # number of delay points (d2)
 
 # --- workspace -----------------------------------------------------------------------------------
 
-w_central = 1650.
-coupling = 0.
-tau = 50.
+w_central = 1650.0
+coupling = 0.0
+tau = 50.0
+
 
 # create experiment
-exp = ws.experiment.builtin('trive')
-exp.w1.points = np.linspace(-2.5, 2.5, nw + 5) * 4 * np.log(2) / dt * 1 / (2 * np.pi * 3e-5) + w_central
-exp.w2.points = np.linspace(-2.5, 2.5, nw) * 4 * np.log(2) / dt * 1 / (2 * np.pi * 3e-5) + w_central
-#exp.w2.points = 0.
-exp.d2.points = np.linspace(-2 * dt, 8 * dt, nt)
+exp = ws.experiment.builtin("trive")
+exp.w1.points = (
+    np.linspace(-2.5, 2.5, nw) * 4 * np.log(2) / dt * 1 / (2 * np.pi * 3e-5) + w_central
+)
+exp.w2.points = (
+    np.linspace(-2.5, 2.5, nw) * 4 * np.log(2) / dt * 1 / (2 * np.pi * 3e-5) + w_central
+)
+# exp.w2.points = 0.
+exp.d2.points = np.linspace(-3 * dt, 3 * dt, nt)
 exp.w1.active = exp.w2.active = exp.d2.active = True
-exp.d2.points = 0 * dt
-exp.d2.active = False
-exp.timestep = 2.
+exp.timestep = 2.0
 exp.early_buffer = 2 * dt
-exp.late_buffer  = 6 * tau
+exp.late_buffer = 6 * tau
 
 # create hamiltonian
 ham = ws.hamiltonian.Hamiltonian(w_central=w_central, coupling=coupling, tau=tau)
-# ham.time_orderings = [6]
-ham.recorded_indices = [7,8]
+ham.recorded_indices = [7, 8]
 
 # do scan
-begin = time.perf_counter()
-scan = exp.run(ham, mp=False)  # 'cpu')
-print(time.perf_counter()-begin)
-# gpuSig = scan.sig.copy()
- #with wt.kit.Timer():
-#    scan2 = exp.run(ham, mp=None)
-# cpuSig = scan2.sig.copy()
-plt.close('all')
-# measure and plot
-fig, gs = wt.artists.create_figure(cols=[1, 'cbar'])
-ax = plt.subplot(gs[0, 0])
-xi = exp.active_axes[0].points
-yi = exp.active_axes[1].points
-zi = np.abs(scan.sig.sum(axis=-2)).sum(axis=-1).T
-# zi /= zi.max()
-ax.pcolor(xi, yi, zi, cmap='default')
-ax.contour(xi, yi, zi, colors='k')
-# decoration
-ax.set_xlabel(exp.active_axes[0].name)
-ax.set_ylabel(exp.active_axes[1].name)
-cax = plt.subplot(gs[0, 1])
-wt.artists.plot_colorbar(label='ampiltude')
-# finish
-plt.show()
+if __name__ == "__main__":
+    with wt.kit.Timer():
+        scan = exp.run(ham, mp=False)  # 'cpu')
+
+    # use WrightTools api
+    data = scan.sig
+
+    data.create_channel(
+        name="measured_amplitude",
+        values=np.abs(data.channels[0][:] + data.channels[1][:]).sum(axis=-1)[..., None]
+    )
+
+    data.transform(*[a for a in data.axis_names if a != "time"])
+
+    out = wt.artists.interact2D(data, channel=-1)
+    plt.show()
