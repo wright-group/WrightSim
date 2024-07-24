@@ -1,9 +1,12 @@
 import numpy as np
-from ..mixed import propagate
+
+from abc import ABC, abstractmethod
 from typing import List
 
+from ..mixed import propagate
 
-class AbstractRKHamiltonian:
+
+class AbstractRKHamiltonian(ABC):
     """boilerplate for Runge Kutta propagator
     """
 
@@ -49,6 +52,7 @@ class AbstractRKHamiltonian:
             self._omega_matrix = self.omega[:, None] - self.omega[None, :]
         return self._omega_matrix[:, :, None]
 
+    @abstractmethod
     def rabi_matrix(self, efields:List[np.array]):
         """
         define the coupling matrix here--dipoles * efields
@@ -60,7 +64,7 @@ class AbstractRKHamiltonian:
             out[to_index, from_index] = -E1 * mu_fi
             return out
         """
-        raise NotImplementedError
+        pass
 
     @property
     def attrs(self) -> dict:
