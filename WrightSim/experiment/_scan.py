@@ -214,7 +214,7 @@ class Scan:
                 units=units_dict[axis_obj.parameter],
             )
         self.sig.create_variable(
-            name="time", values=self.t.reshape([1] * len(self.shape) + [-1]), units="fs"
+            name="time", values=self.t[-self.iprime:].reshape([1] * len(self.shape) + [-1]), units="fs"
         )
 
         for idx, rec_idx in enumerate(self.ham.recorded_indices):
@@ -226,6 +226,7 @@ class Scan:
             )
 
         self.sig.transform(*[n for n in self.sig.variable_names])
+        # self.sig.attrs.update(**self.ham.to_atts())
 
     def get_color(self):
         """Get an array of driven signal frequency for each array point."""
