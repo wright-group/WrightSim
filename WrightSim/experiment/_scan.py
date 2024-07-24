@@ -226,7 +226,6 @@ class Scan:
             )
 
         self.sig.transform(*[n for n in self.sig.variable_names])
-        # self.sig.attrs.update(**self.ham.to_atts())
 
     def get_color(self):
         """Get an array of driven signal frequency for each array point."""
