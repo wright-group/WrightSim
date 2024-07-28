@@ -23,7 +23,7 @@ setup(
     ],
     extras_require={
         "docs": ["sphinx-gallery>=0.1.9"], 
-        "cuda": ["pycuda"]
+        "cuda": ["pycuda"],
         "dev": [
             "black",
             "pre-commit",
