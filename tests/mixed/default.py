@@ -3,6 +3,7 @@ import WrightSim as ws
 import WrightTools as wt
 import numpy as np
 import matplotlib.pyplot as plt
+import pytest
 
 
 dt = 20
