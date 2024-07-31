@@ -71,13 +71,13 @@ class Hamiltonian:
             Order matters, and meaning is dependent on the individual Hamiltonian.
             Default is two values, both initially 1.0.
         omega : 1-D array <float64> (optional)
-            The energies of various transitions.
+            The energies of various transitions (wavenumbers).
             The default uses w_central and coupling parameters to compute the appropriate
                 values for a TRIVE Hamiltonian
-        w_central : float (optional)
-            The cetral frequency of a resonance for a TRIVE Hamiltonian.
+        w_central : float (optional) 
+            The central frequency (wavenumbers) of a resonance for a TRIVE Hamiltonian.
             Used only when ``omega`` is ``None``.
-        coupling : float (optional)
+        coupling : float (optional) (wavenumbers)
             The copuling of states for a TRIVE Hamiltonian.
             Used only when ``omega`` is ``None``.
         propagator : function (optional)
