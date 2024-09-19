@@ -42,10 +42,6 @@ exp.late_buffer = 300.
 
 def check_phase():
     # TODO: use assertions to check phase
-    ...
-    
-
-if __name__ == "__main__":
     scan = exp.run(ham, mp=False, windowed=True)
 
     efields = scan.efields()
@@ -55,26 +51,37 @@ if __name__ == "__main__":
 
     driven_sig = 1j * efields.prod(axis=-2)
 
-    # plot amplitude    
-    import matplotlib.pyplot as plt
-    plt.close('all')
-    fig, gs = wt.artists.create_figure(width='single', nrows=2, cols=[1, 1, 1])
+    diff = []
+    driven_diff = []
+
     for i in range(scan.npulses):
         lo = efields[..., i, :]
         if scan.pm[i] == 1:
             lo = lo.conjugate()
-        diff = (lo * sig).imag.sum(axis=-1)
-        driven_diff = (lo * driven_sig).imag.sum(axis=-1)
+        diff.append((lo * sig).imag.sum(axis=-1))
+        driven_diff.append((lo * driven_sig).imag.sum(axis=-1))
+
+    return diff, driven_diff
+
+
+if __name__ == "__main__":
+    diff, driven_diff = check_phase()
+
+    # plot amplitude    
+    import matplotlib.pyplot as plt
+    plt.close('all')
+    fig, gs = wt.artists.create_figure(width='single', nrows=2, cols=[1, 1, 1])
+    for i, (di, ddi) in enumerate(zip(diff, driven_diff)):
 
         axi = plt.subplot(gs[i])
-        axi.pcolormesh(exp.d2.points, exp.d1.points, -diff, 
-                    vmin=-np.abs(diff).max(),
-                    vmax=np.abs(diff).max(),
+        axi.pcolormesh(exp.d2.points, exp.d1.points, -di, 
+                    vmin=-np.abs(di).max(),
+                    vmax=np.abs(di).max(),
                     cmap='signed')
         axi2 = plt.subplot(gs[i+3])
-        axi2.pcolormesh(exp.d2.points, exp.d1.points, driven_diff,
-                        vmin=-np.abs(driven_diff).max(),
-                        vmax=np.abs(driven_diff).max(),
+        axi2.pcolormesh(exp.d2.points, exp.d1.points, ddi,
+                        vmin=-np.abs(ddi).max(),
+                        vmax=np.abs(ddi).max(),
                         cmap='signed')
         [ax.grid(True) for ax in [axi, axi2]]
 
