@@ -14,8 +14,23 @@ setup(
     name="WrightSim",
     packages=find_packages(),
     package_data=extra_files,
-    install_requires=["h5py>=2.7.0", "numpy", "scipy", "WrightTools"],
-    extras_require={"docs": ["sphinx-gallery>=0.1.9"], "cuda": ["pycuda"]},
+    python_requires=">=3.7",
+    install_requires=[
+        "h5py>=2.7.0",
+        "numpy",
+        "scipy",
+        "WrightTools"
+    ],
+    extras_require={
+        "docs": ["sphinx-gallery>=0.1.9"], 
+        "cuda": ["pycuda"],
+        "dev": [
+            "black",
+            "pre-commit",
+            "pytest",
+            "pytest-cov",
+        ]
+    },
     version=version,
     description="A simulation package for multidimensional spectroscopy.",
     author="WrightSim Developers",
