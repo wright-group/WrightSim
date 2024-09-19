@@ -259,7 +259,7 @@ class Scan:
         efields_shape = list(efp.shape)
         if windowed == self.windowed:
             efields_shape[-1] = self.iprime
-            efields = np.zeros((efields_shape), dtype=np.complex)
+            efields = np.zeros((efields_shape), dtype=np.complex128)
             with wt.kit.Timer():
                 for ind in np.ndindex(tuple(efields_shape[:-2])):
                     efi = self.pulse_class.pulse(efp[ind], self.t_args, pm=self.pm)
@@ -272,7 +272,7 @@ class Scan:
             else:
                 efields_shape[-1] = self.t.size
 
-            efields = np.zeros((efields_shape), dtype=np.complex)
+            efields = np.zeros((efields_shape), dtype=np.complex128)
             with wt.kit.Timer():
                 for ind in np.ndindex(tuple(efields_shape[:-2])):
                     efi = self.pulse_class.pulse(efp[ind], self.t_args, pm=self.pm)
