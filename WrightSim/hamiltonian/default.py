@@ -1,11 +1,13 @@
 import numpy as np
 
 from ..mixed import propagate
+from ._base import AbstractRKHamiltonian
 
 wn_to_omega = 2 * np.pi * 3 * 10 ** -5
 
 
-class Hamiltonian:
+class Hamiltonian(AbstractRKHamiltonian):
+
     cuda_struct = """
     #include <pycuda-complex.hpp>
     #define I pycuda::complex<double>(0,1)
@@ -61,8 +63,8 @@ class Hamiltonian:
             The lifetime of the states in femptoseconds.
             For coherences, this is the pure dephasing time.
             For populations, this is the population lifetime.
-            If tau is scalar, the same dephasing time is used for all coherences,
-                              Populations do not decay by default (inf lifetime).
+            If tau is scalar, the same dephasing time is used for all coherences.
+            Populations do not decay by default (inf lifetime).
             This value is converted into a rate of decay, Gamma, by the multiplicative inverse.
             Default is 50.0 fs dephasing for all coherences, infinite for populations.
         mu : 1-D array <Complex> (optional)
@@ -97,6 +99,7 @@ class Hamiltonian:
             Default is [7, 8], the output of a TRIVE Hamiltonian.
 
         """
+        super().__init__()
         if rho is None:
             self.rho = np.zeros(len(labels), dtype=np.complex128)
             self.rho[0] = 1.0
@@ -127,10 +130,9 @@ class Hamiltonian:
         else:
             self.omega = omega
 
-        if propagator is None:
-            self.propagator = propagate.runge_kutta
-        else:
+        if propagator is not None:
             self.propagator = propagator
+
         self.phase_cycle = phase_cycle
         self.labels = labels
         self.recorded_indices = recorded_indices
@@ -178,28 +180,7 @@ class Hamiltonian:
         cuda.memcpy_htod(int(pointer) + 48, np.intp(int(time_orderings)))
         cuda.memcpy_htod(int(pointer) + 56, np.intp(int(recorded_indices)))
 
-    def matrix(self, efields, time):
-        """Generate the time dependant Hamiltonian Coupling Matrix.
-
-        Parameters
-        ----------
-        efields : ndarray<Complex>
-            Contains the time dependent electric fields.
-            Shape (M x T) where M is number of electric fields, and T is number of timesteps.
-        time : 1-D array <float64>
-            The time step values
-
-        Returns
-        -------
-        ndarray <Complex> 
-            Shape T x N x N array with the full Hamiltonian at each time step.
-            N is the number of states in the Density vector.
-        """
-        # TODO: Just put the body of this method in here, rather than calling _gen_matrix
-        E1, E2, E3 = efields[0:3]
-        return self._gen_matrix(E1, E2, E3, time, self.omega)
-
-    def _gen_matrix(self, E1, E2, E3, time, energies):
+    def rabi_matrix(self, efields):
         """
         creates the coupling array given the input e-fields values for a specific time, t
         
@@ -209,57 +190,51 @@ class Hamiltonian:
         Matrix formulated such that dephasing/relaxation is accounted for 
         outside of the matrix
         """
-        # Define transition energies
-        wag  = energies[2]
-        w2aa = energies[-1]
+        E1, E2, E3 = efields
 
         # Define dipole moments
         mu_ag = self.mu[0]
         mu_2aa = self.mu[-1]
 
         # Define helpful variables
-        A_1 = 0.5j * mu_ag * E1 * np.exp(1j * wag * time)
-        A_2 = 0.5j * mu_ag * E2 * np.exp(-1j * wag * time)
-        A_2prime = 0.5j * mu_ag * E3 * np.exp(1j * wag * time)
-        B_1 = 0.5j * mu_2aa * E1 * np.exp(1j * w2aa * time)
-        B_2 = 0.5j * mu_2aa * E2 * np.exp(-1j * w2aa * time)
-        B_2prime = 0.5j * mu_2aa * E3 * np.exp(1j * w2aa * time)
+        A_1 = 0.5j * mu_ag * E1
+        A_2 = 0.5j * mu_ag * E2
+        A_2prime = 0.5j * mu_ag * E3
+        B_1 = 0.5j * mu_2aa * E1
+        B_2 = 0.5j * mu_2aa * E2
+        B_2prime = 0.5j * mu_2aa * E3
 
         # Initailze the full array of all hamiltonians to zero
-        out = np.zeros((len(time), len(energies), len(energies)), dtype=np.complex128)
+        out = np.zeros((self.rho.size, self.rho.size, efields[0].size), dtype=np.complex128)
 
         # Add appropriate array elements, according to the time orderings
         if 3 in self.time_orderings or 5 in self.time_orderings:
-            out[:, 1, 0] = -A_2
+            out[1, 0] = -A_2
         if 4 in self.time_orderings or 6 in self.time_orderings:
-            out[:, 2, 0] = A_2prime
+            out[2, 0] = A_2prime
         if 1 in self.time_orderings or 2 in self.time_orderings:
-            out[:, 3, 0] = A_1
+            out[3, 0] = A_1
         if 3 in self.time_orderings:
-            out[:, 5, 1] = A_1
+            out[5, 1] = A_1
         if 5 in self.time_orderings:
-            out[:, 6, 1] = A_2prime
+            out[6, 1] = A_2prime
         if 4 in self.time_orderings:
-            out[:, 4, 2] = B_1
+            out[4, 2] = B_1
         if 6 in self.time_orderings:
-            out[:, 6, 2] = -A_2
+            out[6, 2] = -A_2
         if 2 in self.time_orderings:
-            out[:, 4, 3] = B_2prime
+            out[4, 3] = B_2prime
         if 1 in self.time_orderings:
-            out[:, 5, 3] = -A_2
+            out[5, 3] = -A_2
         if 2 in self.time_orderings or 4 in self.time_orderings:
-            out[:, 7, 4] = B_2
-            out[:, 8, 4] = -A_2
+            out[7, 4] = B_2
+            out[8, 4] = -A_2
         if 1 in self.time_orderings or 3 in self.time_orderings:
-            out[:, 7, 5] = -2 * A_2prime
-            out[:, 8, 5] = B_2prime
+            out[7, 5] = -2 * A_2prime
+            out[8, 5] = B_2prime
         if 5 in self.time_orderings or 6 in self.time_orderings:
-            out[:, 7, 6] = -2 * A_1
-            out[:, 8, 6] = B_1
-
-        # Add Gamma along the diagonal
-        for i in range(len(self.Gamma)):
-            out[:, i, i] = -1 * self.Gamma[i]
+            out[7, 6] = -2 * A_1
+            out[8, 6] = B_1
 
         # NOTE: NISE multiplied outputs by the approriate mu in here
         #      This mu factors out, remember to use it where needed later

@@ -17,8 +17,6 @@ ham = ws.hamiltonian.Hamiltonian(
 )
 ham.recorded_elements = [7, 8]
 
-
-@pytest.mark.skip("this test currently fails; bugfix needed")
 def test_windowed():
     exp = ws.experiment.builtin('trive')
     exp.w1.points = w_central  # wn
@@ -84,5 +82,5 @@ def test_frequency():
    
 
 if __name__ == "__main__":
-    test_windowed()  # fails atm
+    test_windowed()
     test_frequency()
