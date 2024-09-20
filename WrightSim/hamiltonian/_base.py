@@ -43,7 +43,7 @@ class AbstractRKHamiltonian(ABC):
     def gamma_matrix(self):
         if self._gamma_matrix is None:
             self._gamma_matrix = np.zeros((self.omega.size,)*2)
-            np.fill_diagonal(self._gamma_matrix, 1 / self.taus)
+            np.fill_diagonal(self._gamma_matrix, 1 / self.tau)
         return self._gamma_matrix[:, :, None]
 
     @property
@@ -57,7 +57,8 @@ class AbstractRKHamiltonian(ABC):
         """
         define the coupling matrix here--dipoles * efields
         return matrix of shape [to, from, time]
-        Usage
+
+        Example implementation
         -----
             E1, E2, E3 = efields
             out = np.zeros((self.rho.size, self.rho.size, efields[0].size), dtype=complex)
@@ -73,7 +74,7 @@ class AbstractRKHamiltonian(ABC):
             "rho": self.rho,
             "omega": self.omega,
             "propagator": "runge_kutta",
-            "taus": self.taus
+            "tau": self.tau
         }
 
     def matshow(self, ax, efield:float=1.0, fontsize=10):
