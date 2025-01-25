@@ -7,13 +7,13 @@ from setuptools import setup, find_packages
 __here__ = pathlib.Path(__file__).parent
 
 
-def read(fname):
-    with __here__ / fname as f:
+def read(path):
+    with path as f:
         return f.read()
 
 
 extra_files = {"WrightSim": ["VERSION"]}
-version = read("WrightSim" / "VERSION").read_text().strip()
+version = read(__here__ / "WrightSim" / "VERSION").read_text().strip()
 
 
 setup(
@@ -39,7 +39,7 @@ setup(
     },
     version=version,
     description="A simulation package for multidimensional spectroscopy.",
-    long_description=read("README.rst"),
+    long_description=read(__here__ / "README.rst"),
     long_description_content_type="text/x-rst",
     author="WrightSim Developers",
     license="MIT",
