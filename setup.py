@@ -8,14 +8,13 @@ __here__ = pathlib.Path(__file__).parent
 
 
 def read(fname):
-    with open(os.path.join(__here__, fname)) as f:
+    with __here__ / fname as f:
         return f.read()
 
 
 extra_files = {"WrightSim": ["VERSION"]}
+version = read("WrightSim" / "VERSION").read_text().strip()
 
-with __here__ / "WrightSim" / "VERSION" as version_file:
-    version = version_file.read_text().strip()
 
 setup(
     name="WrightSim",
