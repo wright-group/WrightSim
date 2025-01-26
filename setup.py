@@ -8,7 +8,7 @@ __here__ = pathlib.Path(__file__).parent
 
 
 def read(path):
-    with path as f:
+    with open(path) as f:
         return f.read()
 
 
