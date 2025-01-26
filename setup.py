@@ -13,7 +13,7 @@ def read(path):
 
 
 extra_files = {"WrightSim": ["VERSION"]}
-version = read(__here__ / "WrightSim" / "VERSION").read_text().strip()
+version = read(__here__ / "WrightSim" / "VERSION").strip()
 
 
 setup(
