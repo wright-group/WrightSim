@@ -3,12 +3,18 @@
 import pathlib
 from setuptools import setup, find_packages
 
+
 __here__ = pathlib.Path(__file__).parent
 
-extra_files = {"WrightSim": ["VERSION"]}
 
-with __here__ / "WrightSim" / "VERSION" as version_file:
-    version = version_file.read_text().strip()
+def read(path):
+    with open(path) as f:
+        return f.read()
+
+
+extra_files = {"WrightSim": ["VERSION"]}
+version = read(__here__ / "WrightSim" / "VERSION").strip()
+
 
 setup(
     name="WrightSim",
@@ -33,6 +39,8 @@ setup(
     },
     version=version,
     description="A simulation package for multidimensional spectroscopy.",
+    long_description=read(__here__ / "README.md"),
+    long_description_content_type="text/markdown",
     author="WrightSim Developers",
     license="MIT",
     url="https://github.com/wright-group/WrightSim",
@@ -43,8 +51,9 @@ setup(
         "License :: OSI Approved :: MIT License",
         "Natural Language :: English",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.5",
-        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
         "Topic :: Scientific/Engineering",
     ],
 )

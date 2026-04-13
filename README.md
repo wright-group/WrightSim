@@ -1,41 +1,35 @@
-WrightSim
-=========
+# WrightSim
+
 A simulation package for multidimensional spectroscopy.
 
 
-Installation
-------------
+## Installation
 
-.. code-block:: bash
-    
+```
     $ git clone https://github.com/wright-group/WrightSim
     $ cd WrightSim
-    $ python setup.py develop
+    $ python -m pip install -e .
+```
 
-Note: This will install all required dependencies.
-PyCUDA is not a required dependency in general, but is required if GPU simulations are desired.
+* This will install all required dependencies. Use ``--no-deps`` flag to only install the package.
+* PyCUDA is not a required dependency in general, but is required if GPU simulations are desired:
+` $ pip install pycuda`
+PyCUDA requires an Nvidia graphics card and drivers, and the CUDA libraries installed.
 
-.. code-block:: bash
+## Usage
 
-    $ pip install pycuda
-
-PyCUDA requires an Nvida graphics card and drivers, and the CUDA libraries installed.
-
-Usage
------
-
-An example script is provided at ``./scripts/target.py``
+An example script is provided at `./scripts/target.py`
 
 This script can be modified to suit an individual simulation.
 
 The basic steps are:
 
-#. Select an experiment
-#. Set up the axes of the scan
-#. Set the time interfal and buffers
-#. Create a Hamiltonian object
-#. Run the scan
-#. (optional) review the results
+1. Select an experiment
+2. Set up the axes of the scan
+3. Set the time interval and buffers
+4. Create a Hamiltonian object
+5. Run the scan
+6. (optional) review the results
 
 Level of parallelism is selected by the ``mp`` parameter of teh ``exp.run`` method.
 
@@ -44,13 +38,11 @@ Level of parallelism is selected by the ``mp`` parameter of teh ``exp.run`` meth
 - ``False`` or ``""`` runs in single threaded mode
 
 
-The script is set up to read the dimensions from arguments.
-it can be run like so:
-
-.. code-block:: bash
-    
+The script is set up to read the dimensions from arguments;
+it can be run like so:    
+```
     $ ./target.py 32 16
-
+```
 
 This will run a 3D simulation of 32x32x16 Freq-Freq-Delay.
 
