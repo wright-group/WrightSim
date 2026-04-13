@@ -7,8 +7,7 @@ __here__ = pathlib.Path(__file__).parent
 __all__ = ["__version__", "__branch__"]
 
 # read from VERSION file
-with __here__ / "VERSION" as f:
-    __version__ = f.read_text().strip()
+__version__ = (__here__ / "VERSION").read_text().strip()
 
 # add git branch, if appropriate
 p = __here__.parent / ".git" / "HEAD"
